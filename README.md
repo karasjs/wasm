@@ -1,5 +1,5 @@
 # wasm
-Webassembly module for karas.
+The webassembly modules for karas.
 
 # License
 [MIT License]
