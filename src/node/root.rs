@@ -8,15 +8,15 @@ pub const WEBGL: u8 = 2;
 #[wasm_bindgen]
 pub struct Root {
   pub mode: u8,
-  pub width: usize,
-  pub height: usize,
+  pub width: f32,
+  pub height: f32,
   pub font_size: f32,
   list: Vec<*mut Node>, // 对应js的Root下structs先序遍历的节点列表
 }
 
 #[wasm_bindgen]
 impl Root {
-  pub fn new(mode: u8, width: usize, height: usize, font_size: f32) -> Root {
+  pub fn new(mode: u8, width: f32, height: f32, font_size: f32) -> Root {
     Root {
       mode,
       width,
