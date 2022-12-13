@@ -2,6 +2,23 @@ use wasm_bindgen::prelude::*;
 use crate::node::Node;
 use crate::node::Root;
 
+pub const LINEAR: u8 = 0;
+pub const EASE_IN: u8 = 1;
+pub const EASE_OUT: u8 = 2;
+pub const EASE: u8 = 3;
+pub const EASE_IN_OUT: u8 = 4;
+pub const EASE_CUSTOM: u8 = 5;
+
+pub const NORMAL: u8 = 0;
+pub const REVERSE: u8 = 1;
+pub const ALTERNATE: u8 = 2;
+pub const ALTERNATE_REVERSE: u8 = 3;
+
+pub const NONE: u8 = 0;
+pub const FORWARDS: u8 = 1;
+pub const BACKWARDS: u8 = 2;
+pub const BOTH: u8 = 3;
+
 struct FrameItem {
   k: u8,
   v: f32,
@@ -38,27 +55,53 @@ pub struct Animation {
   frames_r: Vec<Frame>,
   direction: u8,
   duration: usize,
+  delay: usize,
+  end_delay: usize,
+  fill: u8,
+  playback_rate: f32,
+  easing: u8,
+  bezier: [f32; 4],
+  iterations: usize,
   current_time: usize,
   next_time: usize,
-  iterations: usize,
   play_count: usize,
+  index: usize,
+  percent: f32,
 }
 
 #[wasm_bindgen]
 impl Animation {
-  pub fn new(node: *mut Node, root: *mut Root, direction: u8, duration: usize, iterations: usize) -> Animation {
+  pub fn new(node: *mut Node, root: *mut Root, direction: u8, duration: usize,
+             delay: usize, end_delay: usize, fill: u8, playback_rate: f32,
+             easing: u8, iterations: usize) -> Animation {
     Animation {
       node,
       root,
       frames: Vec::new(),
-      frames_r: Vec:: new(),
+      frames_r: Vec::new(),
       direction,
       duration,
+      delay,
+      end_delay,
+      fill,
+      playback_rate,
+      iterations,
+      easing,
+      bezier: [0.0, 0.0, 1.0, 1.0],
       current_time: 0,
       next_time: 0,
-      iterations,
       play_count: 0,
+      index: 0,
+      percent: 0.0,
     }
+  }
+
+  pub fn set_bezier(&mut self, c1: f32, c2: f32, c3: f32, c4: f32) -> () {
+    self.bezier[0] = c1;
+    self.bezier[1] = c2;
+    self.bezier[2] = c3;
+    self.bezier[3] = c4;
+    self.easing = EASE_CUSTOM;
   }
 
   pub fn add_frame(&mut self) -> () {
@@ -66,7 +109,7 @@ impl Animation {
     self.frames_r.push(Frame::new());
   }
 
-  pub fn add(&mut self, k: u8, v: f32) -> () {
+  pub fn add_item(&mut self, k: u8, v: f32) -> () {
     let wf = self.frames.last_mut();
     match wf {
       Some(x) => {
@@ -111,7 +154,25 @@ impl Animation {
     }
   }
 
-  pub fn on_frame(&mut self, index: usize, percent: f32) -> () {
-    //
+  pub fn on_frame(&mut self, delta: usize) -> () {
+    let root = unsafe {
+      &mut *self.root
+    };
+  }
+
+  pub fn get_play_count(&self) -> usize {
+    self.play_count
+  }
+
+  pub fn get_current_time(&self) -> usize {
+    self.current_time
+  }
+
+  pub fn get_index(&self) -> usize {
+    self.index
+  }
+
+  pub fn get_percent(&self) -> f32 {
+    self.percent
   }
 }
