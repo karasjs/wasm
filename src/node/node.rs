@@ -6,20 +6,20 @@ use crate::style::style_unit;
 use crate::animation::Animation;
 
 fn cal_unit(v: f32, u: u8, percent: f32, root: &Root) -> f32 {
-  if u == style_unit::PERCENT {
-    return v * 100.0 * percent
+  return if u == style_unit::PERCENT {
+    v * 100.0 * percent
   } else if u == style_unit::REM {
-    return v * root.font_size
+    v * root.font_size
   } else if u == style_unit::VW {
-    return v * 0.01 * root.width
+    v * 0.01 * root.width
   } else if u == style_unit::VH {
-    return v * 0.01 * root.height
+    v * 0.01 * root.height
   } else if u == style_unit::VMAX {
-    return v * 0.01 * f32::max(root.width, root.height)
+    v * 0.01 * f32::max(root.width, root.height)
   } else if u == style_unit::VMIN {
-    return v * 0.01 * f32::min(root.width, root.height)
+    v * 0.01 * f32::min(root.width, root.height)
   } else {
-    return v
+    v
   }
 }
 
