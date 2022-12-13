@@ -62,11 +62,11 @@ pub struct Animation {
   easing: u8,
   bezier: [f32; 4],
   iterations: usize,
-  current_time: usize,
+  pub current_time: usize,
   next_time: usize,
-  play_count: usize,
-  index: usize,
-  percent: f32,
+  pub play_count: usize,
+  pub index: usize,
+  pub percent: f32,
 }
 
 #[wasm_bindgen]
@@ -158,21 +158,5 @@ impl Animation {
     let root = unsafe {
       &mut *self.root
     };
-  }
-
-  pub fn get_play_count(&self) -> usize {
-    self.play_count
-  }
-
-  pub fn get_current_time(&self) -> usize {
-    self.current_time
-  }
-
-  pub fn get_index(&self) -> usize {
-    self.index
-  }
-
-  pub fn get_percent(&self) -> f32 {
-    self.percent
   }
 }
