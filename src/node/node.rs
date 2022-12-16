@@ -1,37 +1,20 @@
 use std::ptr;
-use std::f32;
 use wasm_bindgen::prelude::*;
 use crate::node::Root;
 use crate::style::style_unit;
+use crate::refresh::refresh_level;
 use crate::animation::Animation;
-
-fn cal_unit(v: f32, u: u8, percent: f32, root: &Root) -> f32 {
-  return if u == style_unit::PERCENT {
-    v * 100.0 * percent
-  } else if u == style_unit::REM {
-    v * root.font_size
-  } else if u == style_unit::VW {
-    v * 0.01 * root.width
-  } else if u == style_unit::VH {
-    v * 0.01 * root.height
-  } else if u == style_unit::VMAX {
-    v * 0.01 * f32::max(root.width, root.height)
-  } else if u == style_unit::VMIN {
-    v * 0.01 * f32::min(root.width, root.height)
-  } else {
-    v
-  }
-}
 
 #[wasm_bindgen]
 pub struct Node {
   root: *mut Root,
-  x: f32,
-  y: f32,
-  offset_width: f32,
-  offset_height: f32,
-  lv: usize,
-  refresh_level: usize,
+  pub is_text: bool,
+  pub x: f32,
+  pub y: f32,
+  pub offset_width: f32,
+  pub offset_height: f32,
+  pub lv: usize,
+  pub refresh_level: usize,
   current_style: [f32; 14],
   current_unit: [u8; 14],
   computed_style: [f32; 14],
@@ -43,72 +26,19 @@ pub struct Node {
 
 #[wasm_bindgen]
 impl Node {
-  pub fn new(root: *mut Root, x: f32, y: f32, offset_width: f32, offset_height: f32, lv: usize,
-             cs0: f32, cs1: f32, cs2: f32, cs3: f32, cs4: f32, cs5: f32, cs6: f32,
-             cs7: f32, cs8: f32, cs9: f32, cs10: f32, cs11: f32, cs12: f32,
-             cu0: u8, cu1: u8, cu2: u8, cu11: u8, cu12: u8, opacity: f32) -> Node {
-    let root = unsafe { &mut *root };
-    let tx = cal_unit(cs1, cu0, offset_width, root);
-    let ty = cal_unit(cs2, cu1, offset_height, root);
-    let tz = cal_unit(cs3, cu2, offset_width, root);
-    let tfo_x = cal_unit(cs11, cu11, offset_width, root);
-    let tfo_y = cal_unit(cs12, cu12, offset_height, root);
+  pub fn new(is_text: bool) -> Node {
     Node {
-      root,
-      x,
-      y,
-      offset_width,
-      offset_height,
-      lv,
+      root: ptr::null_mut(),
+      is_text,
+      x: 0.0,
+      y: 0.0,
+      offset_width: 0.0,
+      offset_height: 0.0,
+      lv: refresh_level::REFLOW,
       refresh_level: 0,
-      current_style: [
-        cs0,
-        cs1,
-        cs2,
-        cs3,
-        cs4,
-        cs5,
-        cs6,
-        cs7,
-        cs8,
-        cs9,
-        cs10,
-        cs11,
-        cs12,
-        opacity,
-      ],
-      current_unit: [
-        cu0,
-        cu1,
-        cu2,
-        style_unit::DEG,
-        style_unit::DEG,
-        style_unit::DEG,
-        style_unit::NUMBER,
-        style_unit::NUMBER,
-        style_unit::NUMBER,
-        style_unit::DEG,
-        style_unit::DEG,
-        cu11,
-        cu12,
-        style_unit::NUMBER,
-      ],
-      computed_style: [
-        tx,
-        ty,
-        tz,
-        cs3,
-        cs4,
-        cs5,
-        cs6,
-        cs7,
-        cs8,
-        cs9,
-        cs10,
-        tfo_x,
-        tfo_y,
-        opacity,
-      ],
+      current_style: [0.0; 14],
+      current_unit: [0; 14],
+      computed_style: [0.0; 14],
       transform: [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
       matrix: [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
       matrix_event: [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
@@ -116,12 +46,57 @@ impl Node {
     }
   }
 
-  pub fn on_frame(&mut self, delta: usize) -> () {
+  pub fn set_root(&mut self, root: *mut Root) -> () {
+    self.root = root;
+  }
+
+  pub fn add(&mut self, animation: *mut Animation) -> () {
+    self.animations.push(animation);
+  }
+
+  pub fn remove(&mut self, animation: *mut Animation) -> () {
+    self.animations.retain(|&x| x != animation);
+  }
+
+  pub fn clear(&mut self) -> () {
+    self.animations.clear();
+  }
+
+  pub fn set_style(&mut self, x: f32, y: f32, offset_width: f32, offset_height: f32,
+                   cs0: f32, cs1: f32, cs2: f32, cs3: f32, cs4: f32, cs5: f32,
+                   cs6: f32, cs7: f32, cs8: f32, cs9: f32, cs10: f32, cs11: f32, cs12: f32,
+                   cs13: f32, cu0: u8, cu1: u8, cu2: u8, cu12: u8, cu13: u8) -> () {
+    self.x = x;
+    self.y = y;
+    self.offset_width = offset_width;
+    self.offset_height = offset_height;
+    self.current_style[0] = cs0;
+    self.current_style[1] = cs1;
+    self.current_style[2] = cs2;
+    self.current_style[3] = cs3;
+    self.current_style[4] = cs4;
+    self.current_style[5] = cs5;
+    self.current_style[6] = cs6;
+    self.current_style[7] = cs7;
+    self.current_style[8] = cs8;
+    self.current_style[9] = cs9;
+    self.current_style[10] = cs10;
+    self.current_style[11] = cs11;
+    self.current_style[12] = cs12;
+    self.current_style[13] = cs13;
+    self.current_unit[0] = cu0;
+    self.current_unit[1] = cu1;
+    self.current_unit[2] = cu2;
+    self.current_unit[12] = cu12;
+    self.current_unit[13] = cu13;
+  }
+
+  pub fn on_frame(&mut self, diff: f32) -> () {
     let mut count = 0;
     let len = self.animations.len();
     while count < len {
       let mut animation = unsafe { &mut *self.animations[count] };
-      animation.on_frame(delta);
+      animation.on_frame(diff);
       count += 1;
     }
   }
