@@ -41,9 +41,8 @@ impl FrameItem {
 }
 
 struct Frame {
-  list: Vec<FrameItem>,
+  pub list: Vec<FrameItem>,
   time: f32,
-  pub percent: f32,
 }
 
 impl Frame {
@@ -51,9 +50,14 @@ impl Frame {
     Frame {
       list: Vec::new(),
       time,
-      percent: -1.0,
     }
   }
+}
+
+struct Transition {
+  pub k: u8,
+  pub v: f32,
+  pub u: u8,
 }
 
 #[wasm_bindgen]
@@ -106,8 +110,11 @@ pub struct Animation {
   is_delay: bool,
   out_begin_delay: bool,
   begin: bool,
+  last_index: usize,
+  last_percent: f32,
   pub index: usize,
   pub percent: f32,
+  transition: Vec<Transition>,
 }
 
 #[wasm_bindgen]
@@ -141,8 +148,11 @@ impl Animation {
       is_delay: false,
       out_begin_delay: false,
       begin: false,
+      last_index: 0,
+      last_percent: 0.0,
       index: 0,
       percent: 0.0,
+      transition: Vec::new(),
     }
   }
 
@@ -173,7 +183,7 @@ impl Animation {
     }
   }
 
-  pub fn on_frame(&mut self, mut diff: f32) -> () {
+  pub fn on_frame(&mut self, mut diff: f32) -> usize {
     self.current_time = self.next_time;
     let mut current_time = self.current_time;
     let dur = if self.area_duration > 0.0 { f32::min(self.area_duration, self.duration) } else { self.duration };
@@ -188,7 +198,7 @@ impl Animation {
       self.fps_time += diff;
       diff = self.fps_time;
       if diff < 1000.0 / (self.fps as f32) {
-        return;
+        return 0
       }
     }
     self.first_enter = false;
@@ -198,7 +208,7 @@ impl Animation {
         // TODO
       }
       self.is_delay = true;
-      return;
+      return 0
     }
     self.is_delay = false;
     // 减去delay，计算在哪一帧
@@ -235,13 +245,13 @@ impl Animation {
     let current_frames = if is_reverse { &self.frames_r } else { &self.frames };
     // 只有2帧可优化，否则2分查找当前帧
     let len = current_frames.len();
-    let i = if len == 2 {
+    let index = if len == 2 {
       if current_time < dur { 0 } else { 1 }
     } else {
       binary_search(0, len - 1, current_time, current_frames)
     };
     // 最后一帧结束动画，仅最后一轮才会进入，需处理endDelay
-    let is_last_frame = is_last_count && i == len - 1;
+    let is_last_frame = is_last_count && index == len - 1;
     let mut percent = 0_f32;
     if is_last_frame {
       // 无需任何处理
@@ -250,24 +260,31 @@ impl Animation {
     else if len == 2 {
       percent = current_time / dur;
     } else {
-      let time = current_frames[i].time;
-      let total = current_frames[i + 1].time - time;
+      let time = current_frames[index].time;
+      let total = current_frames[index + 1].time - time;
       percent = (current_time - time) / total;
     }
     let in_end_delay = false;
-    let current_frame = &current_frames[i];
+    let current_frame = &current_frames[index];
     // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
-    // if !self.last_frame.is_null() {
-    //   let mut last_frame = unsafe { &mut *self.last_frame };
-    //   let not_same_frame = current_frame == last_frame;
-    //   if not_same_frame {
-    //     last_frame.percent = -1.0;
-    //     self.last_frame = current_frame as *mut Frame;
-    //   }
-    // }
-    // else {
-    //   self.last_frame = current_frame as *mut Frame;
-    // }
+    if index != self.index && percent != self.percent {
+      self.index = index;
+      self.percent = percent;
+      if is_last_frame {
+        self.transition.clear();
+      } else {
+        self.transition = cal_intermediate_style(current_frame, percent);
+      }
+    } else {
+      self.transition.clear();
+    }
+    self.transition.len()
+  }
+}
+
+impl Animation {
+  pub fn get_transition(&mut self) -> &Vec<Transition> {
+    &self.transition
   }
 }
 
@@ -288,4 +305,18 @@ fn binary_search(mut i: usize, mut j: usize, time: f32, frames: &Vec<Frame>) -> 
     }
   }
   i
+}
+
+fn cal_intermediate_style(current_frame: &Frame, percent: f32) -> Vec<Transition> {
+  let mut ts: Vec<Transition> = Vec::new();
+  for item in current_frame.list.iter() {
+    if item.d > 0.0 {
+      ts.push(Transition {
+        k: item.k,
+        v: item.v + item.d * percent,
+        u: item.u,
+      });
+    }
+  }
+  ts
 }
