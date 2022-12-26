@@ -2,6 +2,7 @@ use std::ptr;
 use wasm_bindgen::prelude::*;
 use crate::node::Root;
 use crate::style::style_unit;
+use crate::style::style_key;
 use crate::refresh::refresh_level;
 use crate::animation::Animation;
 
@@ -96,7 +97,41 @@ impl Node {
     let len = self.animations.len();
     while count < len {
       let mut animation = unsafe { &mut *self.animations[count] };
-      animation.on_frame(diff);
+      let len = animation.on_frame(diff);
+      if len > 0 {
+        let ts = animation.get_transition();
+        for item in ts.iter() {
+          self.current_style[item.k as usize] = item.v;
+          self.current_unit[item.k as usize] = item.u;
+          if item.k == style_key::TRANSLATE_X {
+            self.refresh_level |= refresh_level::TRANSLATE_X;
+          } else if item.k == style_key::TRANSLATE_Y {
+            self.refresh_level |= refresh_level::TRANSLATE_Y;
+          } else if item.k == style_key::TRANSLATE_Z {
+            self.refresh_level |= refresh_level::TRANSLATE_Z;
+          } else if item.k == style_key::ROTATE_X {
+            self.refresh_level |= refresh_level::TRANSFORM;
+          } else if item.k == style_key::ROTATE_Y {
+            self.refresh_level |= refresh_level::TRANSFORM;
+          } else if item.k == style_key::ROTATE_Z {
+            self.refresh_level |= refresh_level::ROTATE_Z;
+          } else if item.k == style_key::SCALE_X {
+            self.refresh_level |= refresh_level::SCALE_X;
+          } else if item.k == style_key::SCALE_Y {
+            self.refresh_level |= refresh_level::SCALE_Y;
+          } else if item.k == style_key::SCALE_Z {
+            self.refresh_level |= refresh_level::SCALE_Z;
+          } else if item.k == style_key::SKEW_X {
+            self.refresh_level |= refresh_level::TRANSFORM;
+          } else if item.k == style_key::SKEW_Y {
+            self.refresh_level |= refresh_level::TRANSFORM;
+          } else if item.k == style_key::TFO_X {
+            self.refresh_level |= refresh_level::TRANSFORM;
+          } else if item.k == style_key::TFO_Y {
+            self.refresh_level |= refresh_level::TRANSFORM;
+          }
+        }
+      }
       count += 1;
     }
   }
