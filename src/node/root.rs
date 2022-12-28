@@ -47,10 +47,6 @@ impl Root {
     self.height = height;
   }
 
-  pub fn set_font_size(&mut self, font_size: f32) -> () {
-    self.font_size = font_size;
-  }
-
   // 每帧raf优先存调用，传入运行时间，后续节点动画来计算transition
   pub fn on_frame(&mut self, diff: f32) -> () {
     let mut count = 0;

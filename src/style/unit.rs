@@ -1,16 +1,16 @@
 pub mod style_unit {
-  pub const AUTO: u8 = 0;
-  pub const PX: u8 = 1;
-  pub const PERCENT: u8 = 2;
-  pub const NUMBER: u8 = 3;
-  pub const INHERIT: u8 = 4;
-  pub const DEG: u8 = 5;
-  pub const STRING: u8 = 6;
-  pub const RGBA: u8 = 7;
-  pub const REM: u8 = 8;
-  pub const EM: u8 = 9;
-  pub const VW: u8 = 10;
-  pub const VH: u8 = 11;
-  pub const VMAX: u8 = 12;
-  pub const VMIN: u8 = 13;
+  pub const AUTO: usize = 0;
+  pub const PX: usize = 1;
+  pub const PERCENT: usize = 2;
+  pub const NUMBER: usize = 3;
+  pub const INHERIT: usize = 4;
+  pub const DEG: usize = 5;
+  pub const STRING: usize = 6;
+  pub const RGBA: usize = 7;
+  pub const REM: usize = 8;
+  pub const EM: usize = 9;
+  pub const VW: usize = 10;
+  pub const VH: usize = 11;
+  pub const VMAX: usize = 12;
+  pub const VMIN: usize = 13;
 }

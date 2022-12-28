@@ -23,14 +23,14 @@ pub const BACKWARDS: u8 = 2;
 pub const BOTH: u8 = 3;
 
 struct FrameItem {
-  k: u8,
+  k: usize,
   v: f32,
-  u: u8,
+  u: usize,
   d: f32,
 }
 
 impl FrameItem {
-  fn new(k: u8, v: f32, u: u8, d: f32) -> FrameItem {
+  fn new(k: usize, v: f32, u: usize, d: f32) -> FrameItem {
     FrameItem {
       k,
       v,
@@ -55,9 +55,9 @@ impl Frame {
 }
 
 pub(crate) struct Transition {
-  pub k: u8,
+  pub k: usize,
   pub v: f32,
-  pub u: u8,
+  pub u: usize,
 }
 
 #[wasm_bindgen]
@@ -148,7 +148,7 @@ impl Animation {
     }
   }
 
-  pub fn add_item(&mut self, is_reverse: bool, k: u8, v: f32, u: u8, d: f32) -> () {
+  pub fn add_item(&mut self, is_reverse: bool, k: usize, v: f32, u: usize, d: f32) -> () {
     let fs = if is_reverse { &mut self.frames_r } else { &mut self.frames };
     let wf = fs.last_mut();
     match wf {
