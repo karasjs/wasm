@@ -49,6 +49,7 @@ impl Root {
 
   // 每帧raf优先存调用，传入运行时间，后续节点动画来计算transition
   pub fn on_frame(&mut self, diff: f32) -> () {
+    console_log!("h");
     let mut count = 0;
     let len = self.nodes.len();
     while count < len {
