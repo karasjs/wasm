@@ -24,6 +24,7 @@ pub struct Node {
   transform: [f32; 16],
   matrix: [f32; 16],
   matrix_event: [f32; 16],
+  pub opacity: f32,
   animations: Vec<*mut Animation>,
 }
 
@@ -37,7 +38,7 @@ impl Node {
       y: 0.0,
       offset_width: 0.0,
       offset_height: 0.0,
-      lv: refresh_level::REFLOW,
+      lv: refresh_level::NONE,
       refresh_level: 0,
       current_style: [0.0; 18],
       current_unit: [0; 18],
@@ -45,6 +46,7 @@ impl Node {
       transform: [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
       matrix: [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
       matrix_event: [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+      opacity: 1.0,
       animations: Vec::new(),
     }
   }
@@ -160,6 +162,22 @@ impl Node {
     self.matrix[13] = n;
     self.matrix[14] = o;
     self.matrix[15] = p;
+  }
+
+  pub fn m_ptr(&self) -> *const f32 {
+    self.matrix.as_ptr()
+  }
+
+  pub fn me_ptr(&self) -> *const f32 {
+    self.matrix_event.as_ptr()
+  }
+
+  pub fn get_op(&self) -> f32 {
+    self.computed_style[OPACITY]
+  }
+
+  pub fn get_rl(&self) -> usize {
+    self.refresh_level
   }
 
   pub fn on_frame(&mut self, diff: f32) -> () {

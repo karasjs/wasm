@@ -66,6 +66,25 @@ pub fn multiply(m1: &mut [f32; 16], m2: &[f32; 16]) -> () {
   }
 }
 
+pub fn multiply2(m1: &[f32; 16], m2: &[f32; 16], m: &mut [f32; 16]) -> () {
+  if is_e(m1) {
+    assign_m(m, m2);
+  } else if is_e(m2) {
+    assign_m(m, m1);
+  } else {
+    for i in 0..4 {
+      let a0 = m1[i];
+      let a1 = m1[i + 4];
+      let a2 = m1[i + 8];
+      let a3 = m1[i + 12];
+      m[i] = a0 * m2[0] + a1 * m2[1] + a2 * m2[2] + a3 * m2[3];
+      m[i + 4] = a0 * m2[4] + a1 * m2[5] + a2 * m2[6] + a3 * m2[7];
+      m[i + 8] = a0 * m2[8] + a1 * m2[9] + a2 * m2[10] + a3 * m2[11];
+      m[i + 12] = a0 * m2[12] + a1 * m2[13] + a2 * m2[14] + a3 * m2[15];
+    }
+  }
+}
+
 pub fn multiply_rotate_x(m: &mut [f32; 16], v: f32) -> () {
   if v == 0.0 {
     return
