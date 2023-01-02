@@ -22,6 +22,11 @@ pub const FORWARDS: u8 = 1;
 pub const BACKWARDS: u8 = 2;
 pub const BOTH: u8 = 3;
 
+pub const IDLE: u8 = 0;
+pub const RUNNING: u8 = 1;
+pub const PAUSED: u8 = 2;
+pub const FINISH: u8 = 3;
+
 struct FrameItem {
   k: usize,
   v: f32,
@@ -62,7 +67,7 @@ pub(crate) struct Transition {
 
 #[wasm_bindgen]
 pub struct Animation {
-  node: *mut Node,
+  // node: *mut Node,
   frames: Vec<Frame>,
   frames_r: Vec<Frame>,
   direction: u8,
@@ -78,9 +83,12 @@ pub struct Animation {
   pub easing: u8,
   bezier: [f32; 4],
   pub current_time: f32,
-  next_time: f32,
+  pub next_time: f32,
   pub play_count: usize,
-  first_enter: bool,
+  pub play_state: u8,
+  pub first_enter: bool,
+  pub first_play: bool,
+  is_reverse: bool,
   in_fps: bool,
   fps_time: f32,
   is_delay: bool,
@@ -95,12 +103,12 @@ pub struct Animation {
 
 #[wasm_bindgen]
 impl Animation {
-  pub fn new(node: *mut Node, direction: u8, duration: f32, fps: usize,
+  pub fn new(direction: u8, duration: f32, fps: usize,
              delay: f32, end_delay: f32, fill: u8, playback_rate: f32,
              iterations: usize, area_start: f32, area_duration: f32, easing: u8) -> Animation {
     let frames = Vec::new();
     Animation {
-      node,
+      // node,
       frames,
       frames_r: Vec::new(),
       direction,
@@ -118,7 +126,10 @@ impl Animation {
       current_time: 0.0,
       next_time: 0.0,
       play_count: 0,
+      play_state: 0,
       first_enter: true,
+      first_play: true,
+      is_reverse: direction == REVERSE || direction == ALTERNATE_REVERSE,
       in_fps: false,
       fps_time: 0.0,
       is_delay: false,
@@ -199,7 +210,7 @@ impl Animation {
       play_count = self.iterations - 1;
     }
     current_time -= dur * (play_count as f32);
-    let mut is_reverse = false;
+    let mut is_reverse = self.is_reverse;
     // 如果发生轮换，需重新确定正反向
     if self.play_count < play_count {
       self.begin = true;
@@ -211,6 +222,7 @@ impl Animation {
         } else {
           is_reverse = is_even;
         }
+        self.is_reverse = is_reverse;
       }
     }
     let is_last_count = if self.iterations == 0 {
@@ -243,7 +255,7 @@ impl Animation {
     let in_end_delay = false;
     let current_frame = &current_frames[index];
     // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
-    if index != self.index && percent != self.percent {
+    if index != self.index || percent != self.percent {
       self.index = index;
       self.percent = percent;
       if is_last_frame {
@@ -256,11 +268,15 @@ impl Animation {
     }
     self.transition.len()
   }
-}
 
-impl Animation {
   pub(crate) fn get_transition(&mut self) -> &Vec<Transition> {
     &self.transition
+  }
+
+  pub(crate) fn clear(&mut self) -> () {
+    self.frames.clear();
+    self.frames_r.clear();
+    self.transition.clear();
   }
 }
 
@@ -286,7 +302,7 @@ fn binary_search(mut i: usize, mut j: usize, time: f32, frames: &Vec<Frame>) -> 
 fn cal_intermediate_style(current_frame: &Frame, percent: f32) -> Vec<Transition> {
   let mut ts: Vec<Transition> = Vec::new();
   for item in current_frame.list.iter() {
-    if item.d > 0.0 {
+    if item.d != 0.0 {
       ts.push(Transition {
         k: item.k,
         v: item.v + item.d * percent,

@@ -17,3 +17,8 @@ pub use animation::NONE;
 pub use animation::FORWARDS;
 pub use animation::BACKWARDS;
 pub use animation::BOTH;
+
+pub use animation::IDLE;
+pub use animation::RUNNING;
+pub use animation::PAUSED;
+pub use animation::FINISH;

@@ -1,11 +1,11 @@
 use std::ptr;
-use std::f32::consts::PI;
 use wasm_bindgen::prelude::*;
 use crate::node::Root;
 use crate::style::style_unit;
 use crate::style::style_key::*;
 use crate::refresh::refresh_level;
 use crate::animation::Animation;
+use crate::animation::RUNNING;
 use crate::math::*;
 
 #[wasm_bindgen]
@@ -16,8 +16,13 @@ pub struct Node {
   pub y: f32,
   pub offset_width: f32,
   pub offset_height: f32,
+  pub xa: f32,
+  pub ya: f32,
+  pub xb: f32,
+  pub yb: f32,
   pub lv: usize,
   pub refresh_level: usize,
+  pub total: usize,
   current_style: [f32; 18],
   current_unit: [usize; 18],
   computed_style: [f32; 18],
@@ -38,8 +43,13 @@ impl Node {
       y: 0.0,
       offset_width: 0.0,
       offset_height: 0.0,
+      xa: 0.0,
+      ya: 0.0,
+      xb: 0.0,
+      yb: 0.0,
       lv: refresh_level::NONE,
       refresh_level: 0,
+      total: 0,
       current_style: [0.0; 18],
       current_unit: [0; 18],
       computed_style: [0.0; 18],
@@ -55,15 +65,22 @@ impl Node {
     self.root = root;
   }
 
-  pub fn add(&mut self, animation: *mut Animation) -> () {
+  pub fn add_ani(&mut self, animation: *mut Animation) -> () {
     self.animations.push(animation);
   }
 
-  pub fn remove(&mut self, animation: *mut Animation) -> () {
+  pub fn remove_ani(&mut self, animation: *mut Animation) -> () {
     self.animations.retain(|&x| x != animation);
   }
 
   pub fn clear(&mut self) -> () {
+    let mut count = 0;
+    let len = self.animations.len();
+    while count < len {
+      let mut ani = unsafe { &mut *self.animations[count] };
+      ani.clear();
+      count += 1;
+    }
     self.animations.clear();
   }
 
@@ -76,6 +93,10 @@ impl Node {
     self.y = y;
     self.offset_width = offset_width;
     self.offset_height = offset_height;
+    self.xa = x;
+    self.ya = y;
+    self.xb = x + offset_width;
+    self.yb = y + offset_height;
     self.current_style[0] = cs0;
     self.current_style[1] = cs1;
     self.current_style[2] = cs2;
@@ -118,6 +139,13 @@ impl Node {
     self.computed_style[16] = self.cal_size(cs16, cu16, offset_width);
     self.computed_style[17] = self.cal_size(cs17, cu17, offset_height);
     self.cal_matrix(refresh_level::TRANSFORM);
+  }
+
+  pub fn set_bbox(&mut self, xa: f32, ya: f32, xb: f32, yb: f32) -> () {
+    self.xa = xa;
+    self.ya = ya;
+    self.xb = xb;
+    self.yb = yb;
   }
 
   pub fn set_transform(&mut self, a: f32, b: f32, c: f32, d: f32,
@@ -180,59 +208,64 @@ impl Node {
     self.refresh_level
   }
 
-  pub fn on_frame(&mut self, diff: f32) -> () {
+  pub fn on_frame(&mut self, diff: f32) -> usize {
     let mut count = 0;
     let len = self.animations.len();
+    let mut res = 0;
     while count < len {
-      let mut animation = unsafe { &mut *self.animations[count] };
-      let len = animation.on_frame(diff);
-      if len > 0 {
-        let ts = animation.get_transition();
-        let mut lv = 0_usize;
-        for item in ts.iter() {
-          self.current_style[item.k] = item.v;
-          self.current_unit[item.k] = item.u;
-          if item.k == TRANSLATE_X {
-            lv |= refresh_level::TRANSLATE_X;
-          } else if item.k == TRANSLATE_Y {
-            lv |= refresh_level::TRANSLATE_Y;
-          } else if item.k == TRANSLATE_Z {
-            lv |= refresh_level::TRANSLATE_Z;
-          } else if item.k == ROTATE_X {
-            lv |= refresh_level::TRANSFORM;
-          } else if item.k == ROTATE_Y {
-            lv |= refresh_level::TRANSFORM;
-          } else if item.k == ROTATE_Z {
-            lv |= refresh_level::ROTATE_Z;
-          } else if item.k == SCALE_X {
-            lv |= refresh_level::SCALE_X;
-          } else if item.k == SCALE_Y {
-            lv |= refresh_level::SCALE_Y;
-          } else if item.k == SCALE_Z {
-            lv |= refresh_level::SCALE_Z;
-          } else if item.k == SKEW_X {
-            lv |= refresh_level::TRANSFORM;
-          } else if item.k == SKEW_Y {
-            lv |= refresh_level::TRANSFORM;
-          } else if item.k == OPACITY {
-            lv |= refresh_level::OPACITY;
-          } else if item.k == TFO_X {
-            lv |= refresh_level::TRANSFORM;
-          } else if item.k == TFO_Y {
-            lv |= refresh_level::TRANSFORM;
+      let mut ani = unsafe { &mut *self.animations[count] };
+      if ani.play_state == RUNNING {
+        let len = ani.on_frame(diff);
+        if len > 0 {
+          res += len;
+          let ts = ani.get_transition();
+          let mut lv = 0_usize;
+          for item in ts.iter() {
+            self.current_style[item.k] = item.v;
+            self.current_unit[item.k] = item.u;
+            if item.k == TRANSLATE_X {
+              lv |= refresh_level::TRANSLATE_X;
+            } else if item.k == TRANSLATE_Y {
+              lv |= refresh_level::TRANSLATE_Y;
+            } else if item.k == TRANSLATE_Z {
+              lv |= refresh_level::TRANSLATE_Z;
+            } else if item.k == ROTATE_X {
+              lv |= refresh_level::TRANSFORM;
+            } else if item.k == ROTATE_Y {
+              lv |= refresh_level::TRANSFORM;
+            } else if item.k == ROTATE_Z {
+              lv |= refresh_level::ROTATE_Z;
+            } else if item.k == SCALE_X {
+              lv |= refresh_level::SCALE_X;
+            } else if item.k == SCALE_Y {
+              lv |= refresh_level::SCALE_Y;
+            } else if item.k == SCALE_Z {
+              lv |= refresh_level::SCALE_Z;
+            } else if item.k == SKEW_X {
+              lv |= refresh_level::TRANSFORM;
+            } else if item.k == SKEW_Y {
+              lv |= refresh_level::TRANSFORM;
+            } else if item.k == OPACITY {
+              lv |= refresh_level::OPACITY;
+            } else if item.k == TFO_X {
+              lv |= refresh_level::TRANSFORM;
+            } else if item.k == TFO_Y {
+              lv |= refresh_level::TRANSFORM;
+            }
           }
+          if lv & refresh_level::TRANSFORM_ALL > 0 {
+            self.cal_matrix(lv);
+          }
+          if lv & refresh_level::OPACITY > 0 {
+            self.computed_style[OPACITY]
+              = self.current_style[OPACITY];
+          }
+          self.refresh_level |= lv;
         }
-        if lv & refresh_level::TRANSFORM_ALL > 0 {
-          self.cal_matrix(lv);
-        }
-        if lv & refresh_level::OPACITY > 0 {
-          self.computed_style[OPACITY]
-            = self.current_style[OPACITY];
-        }
-        self.refresh_level |= lv;
       }
       count += 1;
     }
+    res
   }
 
   fn cal_matrix(&mut self, rl: usize) -> () {
@@ -277,28 +310,34 @@ impl Node {
       if rl & refresh_level::ROTATE_Z > 0 {
         let v = self.current_style[ROTATE_Z];
         self.computed_style[ROTATE_Z] = v;
-        let r = v * PI / 180.0;
+        let r = d2r(v);
         let sin = r.sin();
         let cos = r.cos();
+        // console_log!("{:.32} {:.32} {:.32} {:.32}", v, r, sin, cos);
         let x = self.computed_style[SCALE_X];
         let y = self.computed_style[SCALE_Y];
         let cx = cos * x;
         self.transform[0] = cx;
         self.matrix[0] = cx;
         let sx = sin * x;
-        self.transform[1] = cx;
-        self.matrix[1] = cx;
+        self.transform[1] = sx;
+        self.matrix[1] = sx;
         let sy = -sin * y;
-        self.transform[4] = cx;
-        self.matrix[4] = cx;
+        self.transform[4] = sy;
+        self.matrix[4] = sy;
         let cy = cos * y;
-        self.transform[5] = cx;
-        self.matrix[5] = cx;
+        self.transform[5] = cy;
+        self.matrix[5] = cy;
         let ox = self.computed_style[TFO_X] + self.x;
         let oy = self.computed_style[TFO_Y] + self.y;
         self.matrix[12] = self.transform[12] + ox - cx * ox - oy * sy;
         self.matrix[13] = self.transform[13] + oy - sx * ox - oy * cy;
       }
+      // console_log!("{:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32}",
+      // self.transform[0], self.transform[1], self.transform[2], self.transform[3],
+      // self.transform[4], self.transform[5], self.transform[6], self.transform[7],
+      // self.transform[8], self.transform[9], self.transform[10], self.transform[11],
+      // self.transform[12], self.transform[13], self.transform[14], self.transform[15]);
       if rl & refresh_level::SCALE > 0 {
         if rl & refresh_level::SCALE_X > 0 {
           if self.computed_style[SCALE_X] == 0.0 {
