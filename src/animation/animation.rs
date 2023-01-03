@@ -154,18 +154,18 @@ impl Animation {
   }
 
   pub fn add_frame(&mut self, is_reverse: bool, time: f32, easing: u8, x1: f32, y1: f32, x2: f32, y2: f32) -> () {
-    let bezier = if easing == EASE_IN {
-      easing::EASE_IN
+    let bezier: easing::BezierEnum = if easing == EASE_IN {
+      easing::BezierEnum::EaseIn
     } else if easing == EASE_OUT {
-      easing::EASE_OUT
+      easing::BezierEnum::EaseOut
     } else if easing == EASE {
-      easing::EASE
+      easing::BezierEnum::Ease
     } else if easing == EASE_IN_OUT {
-      easing::EASE_IN_OUT
+      easing::BezierEnum::EaseInOut
     } else if easing == EASE_CUSTOM {
       easing::BezierEnum::Custom(Bezier::new(x1, y1, x2, y2))
     } else {
-      easing::LINEAR
+      easing::BezierEnum::Linear
     };
     if is_reverse {
       self.frames_r.push(Frame::new(time, easing, bezier));
@@ -269,19 +269,19 @@ impl Animation {
     }
     // bezier计算percent
     match &current_frames[index].bezier {
-      easing::BezierEnum::EaseIn(b) => {
-        percent = b.timing_function(percent);
+      easing::BezierEnum::Ease => {
+        percent = easing::EASE.timing_function(percent);
       }
-      easing::BezierEnum::EaseIn(b) => {
-        percent = b.timing_function(percent);
+      easing::BezierEnum::EaseIn => {
+        percent = easing::EASE_IN.timing_function(percent);
       }
-      easing::BezierEnum::EaseIn(b) => {
-        percent = b.timing_function(percent);
+      easing::BezierEnum::EaseOut => {
+        percent = easing::EASE_OUT.timing_function(percent);
       }
-      easing::BezierEnum::EaseIn(b) => {
-        percent = b.timing_function(percent);
+      easing::BezierEnum::EaseInOut => {
+        percent = easing::EASE_IN_OUT.timing_function(percent);
       }
-      easing::BezierEnum::EaseIn(b) => {
+      easing::BezierEnum::Custom(b) => {
         percent = b.timing_function(percent);
       }
       _ => {

@@ -1,3 +1,5 @@
+use lazy_static::lazy_static;
+
 const NEWTON_ITERATIONS: usize = 4;
 const NEWTON_MIN_SLOPE: f32 = 0.001;
 const SUBDIVISION_PRECISION: f32 = 0.0000001;
@@ -130,16 +132,18 @@ pub fn bezier(x1: f32, y1: f32, x2: f32, y2: f32) -> Bezier {
 }
 
 pub enum BezierEnum {
-  Linear(Bezier),
-  EaseIn(Bezier),
-  EaseOut(Bezier),
-  Ease(Bezier),
-  EaseInOut(Bezier),
+  Linear,
+  EaseIn,
+  EaseOut,
+  Ease,
+  EaseInOut,
   Custom(Bezier),
 }
 
-pub const LINEAR: BezierEnum = BezierEnum::Linear(Bezier::new(1.0, 1.0, 0.0, 0.0));
-pub const EASE_IN: BezierEnum = BezierEnum::Linear(Bezier::new(0.42, 0.0, 1.0, 1.0));
-pub const EASE_OUT: BezierEnum = BezierEnum::Linear(Bezier::new(0.0, 0.0, 0.58, 1.0));
-pub const EASE: BezierEnum = BezierEnum::Linear(Bezier::new(0.25, 0.1, 0.25, 1.0));
-pub const EASE_IN_OUT: BezierEnum = BezierEnum::Linear(Bezier::new(0.42, 0.0, 0.58, 1.0));
+lazy_static! {
+  pub static ref LINEAR: Bezier = Bezier::new(1.0, 1.0, 0.0, 0.0);
+  pub static ref EASE_IN: Bezier = Bezier::new(0.42, 0.0, 1.0, 1.0);
+  pub static ref EASE_OUT: Bezier = Bezier::new(0.0, 0.0, 0.58, 1.0);
+  pub static ref EASE: Bezier = Bezier::new(0.25, 0.1, 0.25, 1.0);
+  pub static ref EASE_IN_OUT: Bezier = Bezier::new(0.42, 0.0, 0.58, 1.0);
+}
