@@ -268,26 +268,26 @@ impl Animation {
       percent = (current_time - time) / total;
     }
     // bezier计算percent
-    match &current_frames[index].bezier {
+    percent = match &current_frames[index].bezier {
       easing::BezierEnum::Ease => {
-        percent = easing::EASE.timing_function(percent);
+        easing::EASE.timing_function(percent)
       }
       easing::BezierEnum::EaseIn => {
-        percent = easing::EASE_IN.timing_function(percent);
+        easing::EASE_IN.timing_function(percent)
       }
       easing::BezierEnum::EaseOut => {
-        percent = easing::EASE_OUT.timing_function(percent);
+        easing::EASE_OUT.timing_function(percent)
       }
       easing::BezierEnum::EaseInOut => {
-        percent = easing::EASE_IN_OUT.timing_function(percent);
+        easing::EASE_IN_OUT.timing_function(percent)
       }
       easing::BezierEnum::Custom(b) => {
-        percent = b.timing_function(percent);
+        b.timing_function(percent)
       }
       _ => {
-        //
+        percent
       }
-    }
+    };
     let in_end_delay = false;
     let current_frame = &current_frames[index];
     // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
