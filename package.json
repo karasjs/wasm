@@ -1,0 +1,11 @@
+{
+  "name": "wasm-karas",
+  "version": "1.0.0",
+  "dependencies": {
+    "hpm": "^9.5.0"
+  },
+  "scripts": {
+    "build": "wasm-pack build --target web"
+  },
+  "repository": "git@github.com:karasjs/wasm.git"
+}
