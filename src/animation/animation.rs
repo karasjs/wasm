@@ -1,16 +1,15 @@
 use std::f32;
 use std::cmp;
 use wasm_bindgen::prelude::*;
-use crate::node::Node;
-use crate::node::Root;
-use crate::style::{style_key, style_unit};
+use crate::animation::{Bezier, easing};
 
-pub const LINEAR: u8 = 0;
-pub const EASE_IN: u8 = 1;
-pub const EASE_OUT: u8 = 2;
-pub const EASE: u8 = 3;
-pub const EASE_IN_OUT: u8 = 4;
-pub const EASE_CUSTOM: u8 = 5;
+pub const DEFAULT: u8 = 0;
+pub const LINEAR: u8 = 1;
+pub const EASE_IN: u8 = 2;
+pub const EASE_OUT: u8 = 3;
+pub const EASE: u8 = 4;
+pub const EASE_IN_OUT: u8 = 5;
+pub const EASE_CUSTOM: u8 = 6;
 
 pub const NORMAL: u8 = 0;
 pub const REVERSE: u8 = 1;
@@ -48,13 +47,17 @@ impl FrameItem {
 struct Frame {
   pub list: Vec<FrameItem>,
   time: f32,
+  easing: u8,
+  bezier: easing::BezierEnum,
 }
 
 impl Frame {
-  fn new(time: f32) -> Frame {
+  fn new(time: f32, easing: u8, bezier: easing::BezierEnum) -> Frame {
     Frame {
       list: Vec::new(),
       time,
+      easing,
+      bezier,
     }
   }
 }
@@ -108,7 +111,6 @@ impl Animation {
              iterations: usize, area_start: f32, area_duration: f32, easing: u8) -> Animation {
     let frames = Vec::new();
     Animation {
-      // node,
       frames,
       frames_r: Vec::new(),
       direction,
@@ -151,11 +153,24 @@ impl Animation {
     self.easing = EASE_CUSTOM;
   }
 
-  pub fn add_frame(&mut self, is_reverse: bool, time: f32) -> () {
-    if is_reverse {
-      self.frames_r.push(Frame::new(time));
+  pub fn add_frame(&mut self, is_reverse: bool, time: f32, easing: u8, x1: f32, y1: f32, x2: f32, y2: f32) -> () {
+    let bezier = if easing == EASE_IN {
+      easing::EASE_IN
+    } else if easing == EASE_OUT {
+      easing::EASE_OUT
+    } else if easing == EASE {
+      easing::EASE
+    } else if easing == EASE_IN_OUT {
+      easing::EASE_IN_OUT
+    } else if easing == EASE_CUSTOM {
+      easing::BezierEnum::Custom(Bezier::new(x1, y1, x2, y2))
     } else {
-      self.frames.push(Frame::new(time));
+      easing::LINEAR
+    };
+    if is_reverse {
+      self.frames_r.push(Frame::new(time, easing, bezier));
+    } else {
+      self.frames.push(Frame::new(time, easing, bezier));
     }
   }
 
@@ -251,6 +266,27 @@ impl Animation {
       let time = current_frames[index].time;
       let total = current_frames[index + 1].time - time;
       percent = (current_time - time) / total;
+    }
+    // bezier计算percent
+    match &current_frames[index].bezier {
+      easing::BezierEnum::EaseIn(b) => {
+        percent = b.timing_function(percent);
+      }
+      easing::BezierEnum::EaseIn(b) => {
+        percent = b.timing_function(percent);
+      }
+      easing::BezierEnum::EaseIn(b) => {
+        percent = b.timing_function(percent);
+      }
+      easing::BezierEnum::EaseIn(b) => {
+        percent = b.timing_function(percent);
+      }
+      easing::BezierEnum::EaseIn(b) => {
+        percent = b.timing_function(percent);
+      }
+      _ => {
+        //
+      }
     }
     let in_end_delay = false;
     let current_frame = &current_frames[index];

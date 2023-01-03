@@ -1,7 +1,6 @@
-use std::ptr;
 use std::f32;
 use wasm_bindgen::prelude::*;
-use crate::math::{assign_m, cal_rect_point, is_e, multiply2};
+use crate::math::{assign_m, cal_rect_point, multiply2};
 use crate::node::Node;
 use crate::refresh::refresh_level;
 
@@ -76,7 +75,7 @@ impl Root {
     let mut res = 0;
     let len = self.nodes.len();
     while count < len {
-      let mut node = unsafe { &mut *self.nodes[count] };
+      let node = unsafe { &mut *self.nodes[count] };
       res += node.on_frame(diff);
       count += 1;
     }
@@ -217,7 +216,7 @@ impl Root {
   }
 }
 
-fn convert_coords2_gl(mut x: f32, mut y: f32, mut z: f32, mut w: f32, cx: f32, cy: f32, tz: f32) -> (f32, f32, f32, f32) {
+fn convert_coords2_gl(mut x: f32, mut y: f32, mut z: f32, w: f32, cx: f32, cy: f32, tz: f32) -> (f32, f32, f32, f32) {
   if w != 1.0 {
     x /= w;
     y /= w;

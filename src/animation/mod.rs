@@ -1,4 +1,5 @@
 mod animation;
+mod easing;
 
 pub use animation::Animation;
 
@@ -22,3 +23,11 @@ pub use animation::IDLE;
 pub use animation::RUNNING;
 pub use animation::PAUSED;
 pub use animation::FINISH;
+
+pub use easing::Bezier;
+pub use easing::BezierEnum;
+// pub use easing::BEZIER_LINEAR;
+// pub use easing::BEZIER_EASE_IN;
+// pub use easing::BEZIER_EASE;
+// pub use easing::BEZIER_EASE_OUT;
+// pub use easing::BEZIER_EASE_IN_OUT;

@@ -241,7 +241,7 @@ pub fn multiply_tfo(m: &mut [f32; 16], x: f32, y: f32) -> () {
 pub fn cal_rotate_3d(t: &mut[f32; 16], mut x: f32, mut y: f32, mut z: f32, a: f32) -> () {
   let r = d2r(a);
   let mut s = r.sin();
-  let mut c = r.cos();
+  let c = r.cos();
   if x != 0.0 && y == 0.0 && z == 0.0 {
     if x < 0.0 {
       s = -s;

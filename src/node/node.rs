@@ -77,7 +77,7 @@ impl Node {
     let mut count = 0;
     let len = self.animations.len();
     while count < len {
-      let mut ani = unsafe { &mut *self.animations[count] };
+      let ani = unsafe { &mut *self.animations[count] };
       ani.clear();
       count += 1;
     }
@@ -213,7 +213,7 @@ impl Node {
     let len = self.animations.len();
     let mut res = 0;
     while count < len {
-      let mut ani = unsafe { &mut *self.animations[count] };
+      let ani = unsafe { &mut *self.animations[count] };
       if ani.play_state == RUNNING {
         let len = ani.on_frame(diff);
         if len > 0 {

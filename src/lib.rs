@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use std::f32::consts::PI;
 
 #[wasm_bindgen]
 extern "C" {
