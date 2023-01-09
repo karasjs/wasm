@@ -1,5 +1,40 @@
 use wasm_bindgen::prelude::*;
 
+use wasm_bindgen::{prelude::wasm_bindgen};
+
+mod WasmPtr{
+  macro_rules! wasm_ptr_transform {
+    ($ptr: expr) => {
+      unsafe {
+        use wasm_bindgen::__rt::WasmRefCell;
+        let js: &mut WasmRefCell<T> = Box::leak(Box::from_raw($ptr as *mut WasmRefCell<T>));
+        js.get_mut()
+      }
+    };
+  }
+  
+  // js ptr to rust ptr mut
+  pub fn transform_wasm_ptr_mut<T>(addr: *mut T) -> *mut T  {
+    wasm_ptr_transform!(addr)
+  }
+  
+  // js ptr to rust ptr
+  pub fn transform_wasm_ptr<T>(addr: *const T) -> *const T  {
+    wasm_ptr_transform!(addr)
+  }
+  
+  // get object mut ref from ptr
+  pub fn leak_wasm_ptr_mut<T>(addr: *mut T) -> &'static mut T {
+    wasm_ptr_transform!(addr)
+  }
+  
+  // get object ref from ptr
+  pub fn leak_wasm_ptr<T>(addr: *const T) -> &'static T {
+    wasm_ptr_transform!(addr)
+  }
+}
+
+
 #[wasm_bindgen]
 extern "C" {
   // Use `js_namespace` here to bind `console.log(..)` instead of just

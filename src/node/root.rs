@@ -1,5 +1,6 @@
 use std::f32;
 use wasm_bindgen::prelude::*;
+use crate::{WasmPtr};
 use crate::math::{assign_m, cal_rect_point, multiply2};
 use crate::node::Node;
 use crate::refresh::refresh_level;
@@ -37,6 +38,7 @@ impl Root {
   }
 
   pub fn add_node(&mut self, node: *mut Node) -> () {
+    // let node = WasmPtr::transform_wasm_ptr_mut(node);
     self.nodes.push(node);
   }
 
