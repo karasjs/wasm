@@ -1,10 +1,11 @@
+use std::f64::consts::PI;
 use wasm_bindgen::prelude::*;
 
-pub fn identity() -> [f32; 16] {
+pub fn identity() -> [f64; 16] {
   [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
 }
 
-pub fn is_e(m: &[f32; 16]) -> bool {
+pub fn is_e(m: &[f64; 16]) -> bool {
   if m[0] == 1.0
     && m[1] == 0.0
     && m[2] == 0.0
@@ -27,7 +28,7 @@ pub fn is_e(m: &[f32; 16]) -> bool {
 }
 
 
-pub fn assign_m(m1: &mut [f32; 16], m2: &[f32; 16]) -> () {
+pub fn assign_m(m1: &mut [f64; 16], m2: &[f64; 16]) -> () {
   m1[0] = m2[0];
   m1[1] = m2[1];
   m1[2] = m2[2];
@@ -46,7 +47,7 @@ pub fn assign_m(m1: &mut [f32; 16], m2: &[f32; 16]) -> () {
   m1[15] = m2[15];
 }
 
-pub fn multiply(m1: &mut [f32; 16], m2: &[f32; 16]) -> () {
+pub fn multiply(m1: &mut [f64; 16], m2: &[f64; 16]) -> () {
   if is_e(m1) {
     assign_m(m1, m2);
   } else if is_e(m2) {
@@ -65,7 +66,7 @@ pub fn multiply(m1: &mut [f32; 16], m2: &[f32; 16]) -> () {
   }
 }
 
-pub fn multiply2(m1: &[f32; 16], m2: &[f32; 16], m: &mut [f32; 16]) -> () {
+pub fn multiply2(m1: &[f64; 16], m2: &[f64; 16], m: &mut [f64; 16]) -> () {
   if is_e(m1) {
     assign_m(m, m2);
   } else if is_e(m2) {
@@ -84,7 +85,7 @@ pub fn multiply2(m1: &[f32; 16], m2: &[f32; 16], m: &mut [f32; 16]) -> () {
   }
 }
 
-pub fn multiply_rotate_x(m: &mut [f32; 16], v: f32) -> () {
+pub fn multiply_rotate_x(m: &mut [f64; 16], v: f64) -> () {
   if v == 0.0 {
     return
   }
@@ -108,7 +109,7 @@ pub fn multiply_rotate_x(m: &mut [f32; 16], v: f32) -> () {
   m[11] = h * -sin + l * cos;
 }
 
-pub fn multiply_rotate_y(m: &mut [f32; 16], v: f32) -> () {
+pub fn multiply_rotate_y(m: &mut [f64; 16], v: f64) -> () {
   if v == 0.0 {
     return
   }
@@ -133,7 +134,7 @@ pub fn multiply_rotate_y(m: &mut [f32; 16], v: f32) -> () {
   m[11] = d * sin + l * cos;
 }
 
-pub fn multiply_rotate_z(m: &mut [f32; 16], v: f32) -> () {
+pub fn multiply_rotate_z(m: &mut [f64; 16], v: f64) -> () {
   if v == 0.0 {
     return
   }
@@ -158,7 +159,7 @@ pub fn multiply_rotate_z(m: &mut [f32; 16], v: f32) -> () {
   m[7] = d * -sin + h * cos;
 }
 
-pub fn multiply_skew_x(m: &mut [f32; 16], v: f32) -> () {
+pub fn multiply_skew_x(m: &mut [f64; 16], v: f64) -> () {
   if v == 0.0 {
     return
   }
@@ -169,7 +170,7 @@ pub fn multiply_skew_x(m: &mut [f32; 16], v: f32) -> () {
   m[7] += m[3] * tan;
 }
 
-pub fn multiply_skew_y(m: &mut [f32; 16], v: f32) -> () {
+pub fn multiply_skew_y(m: &mut [f64; 16], v: f64) -> () {
   if v == 0.0 {
     return
   }
@@ -180,7 +181,7 @@ pub fn multiply_skew_y(m: &mut [f32; 16], v: f32) -> () {
   m[3] += m[7] * tan;
 }
 
-pub fn multiply_scale_x(m: &mut [f32; 16], v: f32) -> () {
+pub fn multiply_scale_x(m: &mut [f64; 16], v: f64) -> () {
   if v == 1.0 {
     return
   }
@@ -190,7 +191,7 @@ pub fn multiply_scale_x(m: &mut [f32; 16], v: f32) -> () {
   m[3] *= v;
 }
 
-pub fn multiply_scale_y(m: &mut [f32; 16], v: f32) -> () {
+pub fn multiply_scale_y(m: &mut [f64; 16], v: f64) -> () {
   if v == 1.0 {
     return
   }
@@ -200,7 +201,7 @@ pub fn multiply_scale_y(m: &mut [f32; 16], v: f32) -> () {
   m[7] *= v;
 }
 
-pub fn multiply_scale_z(m: &mut [f32; 16], v: f32) -> () {
+pub fn multiply_scale_z(m: &mut [f64; 16], v: f64) -> () {
   if v == 1.0 {
     return
   }
@@ -210,7 +211,7 @@ pub fn multiply_scale_z(m: &mut [f32; 16], v: f32) -> () {
   m[11] *= v;
 }
 
-pub fn tfo_multiply(m: &mut [f32; 16], x: f32, y: f32) -> () {
+pub fn tfo_multiply(m: &mut [f64; 16], x: f64, y: f64) -> () {
   if x == 0.0 && y == 0.0 {
     return
   }
@@ -228,7 +229,7 @@ pub fn tfo_multiply(m: &mut [f32; 16], x: f32, y: f32) -> () {
   m[13] += p * y;
 }
 
-pub fn multiply_tfo(m: &mut [f32; 16], x: f32, y: f32) -> () {
+pub fn multiply_tfo(m: &mut [f64; 16], x: f64, y: f64) -> () {
   if x == 0.0 && y == 0.0 {
     return
   }
@@ -238,7 +239,7 @@ pub fn multiply_tfo(m: &mut [f32; 16], x: f32, y: f32) -> () {
   m[15] += m[3] * x + m[7] * y;
 }
 
-pub fn cal_rotate_3d(t: &mut[f32; 16], mut x: f32, mut y: f32, mut z: f32, a: f32) -> () {
+pub fn cal_rotate_3d(t: &mut[f64; 16], mut x: f64, mut y: f64, mut z: f64, a: f64) -> () {
   let r = d2r(a);
   let mut s = r.sin();
   let c = r.cos();
@@ -296,12 +297,12 @@ pub fn cal_rotate_3d(t: &mut[f32; 16], mut x: f32, mut y: f32, mut z: f32, a: f3
   }
 }
 
-pub fn d2r(d: f32) -> f32 {
-  d * 3.141592653589793 / 180.0
+pub fn d2r(d: f64) -> f64 {
+  d * PI / 180.0
 }
 
-pub fn cal_rect_point(xa: f32, ya: f32, xb: f32, yb: f32, m: &[f32; 16])
-  -> (f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32, f32) {
+pub fn cal_rect_point(xa: f64, ya: f64, xb: f64, yb: f64, m: &[f64; 16])
+  -> (f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64) {
   let (x1, y1, z1, w1) = cal_point(xa, ya, 0.0, 1.0, m);
   let (x3, y3, z3, w3) = cal_point(xb, yb, 0.0, 1.0, m);
   let mut x2 = 0.0;
@@ -329,7 +330,7 @@ pub fn cal_rect_point(xa: f32, ya: f32, xb: f32, yb: f32, m: &[f32; 16])
   (x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4)
 }
 
-pub fn cal_point(x: f32, y: f32, z: f32, w: f32, m: &[f32; 16]) -> (f32, f32, f32, f32) {
+pub fn cal_point(x: f64, y: f64, z: f64, w: f64, m: &[f64; 16]) -> (f64, f64, f64, f64) {
   if !is_e(m) {
     let a1 = m[0];
     let b1 = m[1];
@@ -357,7 +358,7 @@ pub fn cal_point(x: f32, y: f32, z: f32, w: f32, m: &[f32; 16]) -> (f32, f32, f3
       y0 += y * b2;
     }
     y0 += if w == 1.0 { b4 } else { b4 * w };
-    let mut z0 = 0_f32;
+    let mut z0 = 0_f64;
     let mut w0 = w;
     if d1 != 0.0 || d2 != 0.0 || d3 != 0.0 {
       w0 = x * d1 + y * d2 + z * d3 + d4 * w;

@@ -1,6 +1,6 @@
-use std::f32;
+use std::f64;
 use wasm_bindgen::prelude::*;
-use crate::{WasmPtr};
+use crate::{wasm_ptr};
 use crate::math::{assign_m, cal_rect_point, multiply2};
 use crate::node::Node;
 use crate::refresh::refresh_level;
@@ -11,14 +11,14 @@ pub const WEBGL: u8 = 2;
 #[wasm_bindgen]
 pub struct Root {
   pub mode: u8,
-  pub width: f32,
-  pub height: f32,
-  pub font_size: f32,
+  pub width: f64,
+  pub height: f64,
+  pub font_size: f64,
   nodes: Vec<*mut Node>, // 对应js的Root下structs先序遍历的节点列表
   rl: Vec<usize>,
-  me: Vec<[f32; 16]>,
-  op: Vec<f32>,
-  vt: Vec<[f32; 16]>,
+  me: Vec<[f64; 16]>,
+  op: Vec<f64>,
+  vt: Vec<[f64; 16]>,
 }
 
 #[wasm_bindgen]
@@ -38,8 +38,10 @@ impl Root {
   }
 
   pub fn add_node(&mut self, node: *mut Node) -> () {
-    // let node = WasmPtr::transform_wasm_ptr_mut(node);
+    let node = wasm_ptr::transform_mut(node);
     self.nodes.push(node);
+    let node = unsafe { &mut *node };
+    node.set_root(self);
   }
 
   pub fn remove_node(&mut self, i: usize) -> () {
@@ -52,6 +54,8 @@ impl Root {
 
   pub fn insert_node(&mut self, i: usize, node: *mut Node) -> () {
     self.nodes.insert(i, node);
+    let node = unsafe { &mut *node };
+    node.set_root(self);
   }
 
   pub fn clear(&mut self) -> () {
@@ -66,13 +70,13 @@ impl Root {
     self.nodes.len()
   }
 
-  pub fn resize(&mut self, width: f32, height: f32) -> () {
+  pub fn resize(&mut self, width: f64, height: f64) -> () {
     self.width = width;
     self.height = height;
   }
 
   // 每帧raf优先存调用，传入运行时间，后续节点动画来计算transition
-  pub fn on_frame(&mut self, diff: f32) -> usize {
+  pub fn on_frame(&mut self, diff: f64) -> usize {
     let mut count = 0;
     let mut res = 0;
     let len = self.nodes.len();
@@ -81,15 +85,19 @@ impl Root {
       res += node.on_frame(diff);
       count += 1;
     }
+    // 有动画执行了变更，需要遍历节点计算matrix和opacity
+    if res > 0 {
+      self.refresh();
+    }
     res
   }
 
   // 每帧刷新前调用，计算节点列表的matrix和opacity
-  pub fn refresh(&mut self) -> usize {
+  fn refresh(&mut self) -> () {
     let mut count = 1;
     let len = self.nodes.len();
     if len == 0 {
-      return len
+      return
     }
     self.rl.resize(len, refresh_level::NONE);
     self.me.resize(len, [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]);
@@ -99,11 +107,11 @@ impl Root {
     let mut last_lv: usize = 0;
     let mut parent: usize = 0; // 存下标，取op/me上的
     // 先设置第0个root，后续则是循环
-    let root = unsafe { &mut * self.nodes[0] };
+    let root = unsafe { &mut *self.nodes[0] };
     let (c1, c2) = unsafe {
       (
-        & *(root.m_ptr() as *const [f32; 16] as *mut [f32; 16]),
-        &mut *(root.me_ptr() as *const [f32; 16] as *mut [f32; 16]),
+        & *(root.m_ptr() as *const [f64; 16] as *mut [f64; 16]),
+        &mut *(root.me_ptr() as *const [f64; 16] as *mut [f64; 16]),
       )
     };
     assign_m(c2, c1);
@@ -120,11 +128,11 @@ impl Root {
         x3, y3, z3, w3,
         x4, y4, z4, w4)
         = cal_rect_point(root.xa, root.yb, root.xb, root.ya, c2);
-      let mut z = f32::max(z1.abs(), z2.abs());
-      z = f32::max(z, z3.abs());
-      z = f32::max(z, z4.abs());
+      let mut z = f64::max(z1.abs(), z2.abs());
+      z = f64::max(z, z3.abs());
+      z = f64::max(z, z4.abs());
       if z != 0.0 {
-        z = f32::max(z, (cx * cx + cy * cy).sqrt());
+        z = f64::max(z, (cx * cx + cy * cy).sqrt());
       }
       let (x1, y1, z1, w1) = convert_coords2_gl(x1, y1, z1, w1, cx, cy, z);
       let (x2, y2, z2, w2) = convert_coords2_gl(x2, y2, z2, w2, cx, cy, z);
@@ -157,12 +165,12 @@ impl Root {
       // else {}
       let (m1, m2) = unsafe {
         (
-          & *(node.m_ptr() as *const [f32; 16] as *mut [f32; 16]),
-          &mut *(node.me_ptr() as *const [f32; 16] as *mut [f32; 16]),
+          & *(node.m_ptr() as *const [f64; 16] as *mut [f64; 16]),
+          &mut *(node.me_ptr() as *const [f64; 16] as *mut [f64; 16]),
         )
       };
       let p = unsafe { & *self.nodes[parent] };
-      let pm = unsafe { & *(p.m_ptr() as *const [f32; 16] as *mut [f32; 16]) };
+      let pm = unsafe { & *(p.m_ptr() as *const [f64; 16] as *mut [f64; 16]) };
       multiply2(pm, m1,m2);
       self.rl[count] = node.refresh_level;
       assign_m(&mut self.me[count], m2);
@@ -175,11 +183,11 @@ impl Root {
           x3, y3, z3, w3,
           x4, y4, z4, w4)
           = cal_rect_point(node.xa, node.yb, node.xb, node.ya, m2);
-        let mut z = f32::max(z1.abs(), z2.abs());
-        z = f32::max(z, z3.abs());
-        z = f32::max(z, z4.abs());
+        let mut z = f64::max(z1.abs(), z2.abs());
+        z = f64::max(z, z3.abs());
+        z = f64::max(z, z4.abs());
         if z != 0.0 {
-          z = f32::max(z, (cx * cx + cy * cy).sqrt());
+          z = f64::max(z, (cx * cx + cy * cy).sqrt());
         }
         let (x1, y1, z1, w1) = convert_coords2_gl(x1, y1, z1, w1, cx, cy, z);
         let (x2, y2, z2, w2) = convert_coords2_gl(x2, y2, z2, w2, cx, cy, z);
@@ -198,27 +206,26 @@ impl Root {
         count += node.total;
       }
     }
-    len
   }
 
   pub fn rl_ptr(&self) -> *const usize {
     self.rl.as_ptr()
   }
 
-  pub fn me_ptr(&self) -> *const [f32; 16] {
+  pub fn me_ptr(&self) -> *const [f64; 16] {
     self.me.as_ptr()
   }
 
-  pub fn op_ptr(&self) -> *const f32 {
+  pub fn op_ptr(&self) -> *const f64 {
     self.op.as_ptr()
   }
 
-  pub fn vt_ptr(&self) -> *const [f32; 16] {
+  pub fn vt_ptr(&self) -> *const [f64; 16] {
     self.vt.as_ptr()
   }
 }
 
-fn convert_coords2_gl(mut x: f32, mut y: f32, mut z: f32, w: f32, cx: f32, cy: f32, tz: f32) -> (f32, f32, f32, f32) {
+fn convert_coords2_gl(mut x: f64, mut y: f64, mut z: f64, w: f64, cx: f64, cy: f64, tz: f64) -> (f64, f64, f64, f64) {
   if w != 1.0 {
     x /= w;
     y /= w;

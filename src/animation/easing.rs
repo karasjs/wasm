@@ -1,36 +1,36 @@
 use lazy_static::lazy_static;
 
 const NEWTON_ITERATIONS: usize = 4;
-const NEWTON_MIN_SLOPE: f32 = 0.001;
-const SUBDIVISION_PRECISION: f32 = 0.0000001;
+const NEWTON_MIN_SLOPE: f64 = 0.001;
+const SUBDIVISION_PRECISION: f64 = 0.0000001;
 const SUBDIVISION_MAX_ITERATIONS: usize = 10;
 
 const K_SPLINE_TABLE_SIZE: usize = 11;
-const K_SAMPLE_STEP_SIZE: f32= 1.0 / (K_SPLINE_TABLE_SIZE as f32 - 1.0);
+const K_SAMPLE_STEP_SIZE: f64= 1.0 / (K_SPLINE_TABLE_SIZE as f64 - 1.0);
 
-fn a(a1: f32, a2: f32) -> f32 {
+fn a(a1: f64, a2: f64) -> f64 {
   1.0 - 3.0 * a2 + 3.0 * a1
 }
 
-fn b(a1: f32, a2: f32) -> f32 {
+fn b(a1: f64, a2: f64) -> f64 {
   3.0 * a2 - 6.0 * a1
 }
 
-fn c(a1: f32) -> f32 {
+fn c(a1: f64) -> f64 {
   3.0 * a1
 }
 
-fn cal_c_bezier(t: f32, a1: f32, a2: f32) -> f32 {
-  ((a(a1, a2) * t + b(a2, a2)) * t + c(a1)) * t
+fn cal_c_bezier(t: f64, a1: f64, a2: f64) -> f64 {
+  ((a(a1, a2) * t + b(a1, a2)) * t + c(a1)) * t
 }
 
-fn get_slop(t: f32, a1: f32, a2: f32) -> f32 {
+fn get_slop(t: f64, a1: f64, a2: f64) -> f64 {
   3.0 * a(a1, a2) * t * t + 2.0 * b(a2, a2) * t + c(a1)
 }
 
-fn binary_subdivide(x: f32, mut a: f32, mut b: f32, x1: f32, x2: f32) -> f32 {
-  let mut current_x = 0_f32;
-  let mut current_t = 0_f32;
+fn binary_subdivide(x: f64, mut a: f64, mut b: f64, x1: f64, x2: f64) -> f64 {
+  let mut current_x = 0_f64;
+  let mut current_t = 0_f64;
   let mut i = 0;
   loop {
     current_t = a + (b - a) / 2.0;
@@ -51,7 +51,7 @@ fn binary_subdivide(x: f32, mut a: f32, mut b: f32, x1: f32, x2: f32) -> f32 {
   current_t
 }
 
-fn newton_raphson_iterate(x: f32, mut gt: f32, x1: f32, x2: f32) -> f32 {
+fn newton_raphson_iterate(x: f64, mut gt: f64, x1: f64, x2: f64) -> f64 {
   let mut i = 0;
   while i < NEWTON_ITERATIONS {
     let current_slop = get_slop(gt, x1, x2);
@@ -65,24 +65,24 @@ fn newton_raphson_iterate(x: f32, mut gt: f32, x1: f32, x2: f32) -> f32 {
   gt
 }
 
-fn linear_easing(x: f32) -> f32 {
+fn linear_easing(x: f64) -> f64 {
   x
 }
 
 pub struct Bezier {
-  x1: f32,
-  y1: f32,
-  x2: f32,
-  y2: f32,
-  sample_values: [f32; K_SPLINE_TABLE_SIZE],
+  x1: f64,
+  y1: f64,
+  x2: f64,
+  y2: f64,
+  sample_values: [f64; K_SPLINE_TABLE_SIZE],
 }
 
 impl Bezier {
-  pub fn new(x1: f32, y1: f32, x2: f32, y2: f32) -> Bezier {
-    let mut sample_values = [0_f32; K_SPLINE_TABLE_SIZE];
+  pub fn new(x1: f64, y1: f64, x2: f64, y2: f64) -> Bezier {
+    let mut sample_values = [0_f64; K_SPLINE_TABLE_SIZE];
     let mut i = 0;
     while i < K_SPLINE_TABLE_SIZE {
-      sample_values[i] = cal_c_bezier(i as f32 * K_SAMPLE_STEP_SIZE, x1, x2);
+      sample_values[i] = cal_c_bezier(i as f64 * K_SAMPLE_STEP_SIZE, x1, x2);
       i += 1;
     }
     Bezier {
@@ -94,8 +94,8 @@ impl Bezier {
     }
   }
 
-  fn get_t_for_x(&self, x: f32) -> f32 {
-    let mut interval_start = 0_f32;
+  fn get_t_for_x(&self, x: f64) -> f64 {
+    let mut interval_start = 0_f64;
     let mut current_sample = 1;
     let last_sample = K_SPLINE_TABLE_SIZE - 1;
     while current_sample != last_sample && self.sample_values[current_sample] <= x {
@@ -104,8 +104,8 @@ impl Bezier {
     }
     current_sample -= 1;
 
-    let dist = (x - self.sample_values[current_sample]) / self.sample_values[current_sample + 1]
-      - self.sample_values[current_sample];
+    let dist = (x - self.sample_values[current_sample]) /
+      (self.sample_values[current_sample + 1] - self.sample_values[current_sample]);
     let gt = interval_start + dist * K_SAMPLE_STEP_SIZE;
 
     let initial_slope = get_slop(gt, self.x1, self.x2);
@@ -118,7 +118,7 @@ impl Bezier {
     }
   }
 
-  pub fn timing_function(&self, x: f32) -> f32 {
+  pub fn timing_function(&self, x: f64) -> f64 {
     if x == 0.0 || x == 1.0 {
       return x
     }
@@ -127,7 +127,7 @@ impl Bezier {
   }
 }
 
-pub fn bezier(x1: f32, y1: f32, x2: f32, y2: f32) -> Bezier {
+pub fn bezier(x1: f64, y1: f64, x2: f64, y2: f64) -> Bezier {
   Bezier::new(x1, y1, x2, y2)
 }
 
@@ -141,7 +141,7 @@ pub enum BezierEnum {
 }
 
 lazy_static! {
-  pub static ref LINEAR: Bezier = Bezier::new(1.0, 1.0, 0.0, 0.0);
+  pub static ref LINEAR: Bezier = Bezier::new(0.0, 0.0, 1.0, 1.0);
   pub static ref EASE_IN: Bezier = Bezier::new(0.42, 0.0, 1.0, 1.0);
   pub static ref EASE_OUT: Bezier = Bezier::new(0.0, 0.0, 0.58, 1.0);
   pub static ref EASE: Bezier = Bezier::new(0.25, 0.1, 0.25, 1.0);

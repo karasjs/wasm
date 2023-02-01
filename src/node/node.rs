@@ -1,35 +1,37 @@
 use std::ptr;
 use wasm_bindgen::prelude::*;
+use crate::{wasm_ptr};
 use crate::node::Root;
 use crate::style::style_unit;
 use crate::style::style_key::*;
 use crate::refresh::refresh_level;
 use crate::animation::Animation;
 use crate::animation::RUNNING;
+use crate::animation::GOTO;
 use crate::math::*;
 
 #[wasm_bindgen]
 pub struct Node {
   root: *mut Root,
   pub is_text: bool,
-  pub x: f32,
-  pub y: f32,
-  pub offset_width: f32,
-  pub offset_height: f32,
-  pub xa: f32,
-  pub ya: f32,
-  pub xb: f32,
-  pub yb: f32,
+  pub x: f64,
+  pub y: f64,
+  pub offset_width: f64,
+  pub offset_height: f64,
+  pub xa: f64,
+  pub ya: f64,
+  pub xb: f64,
+  pub yb: f64,
   pub lv: usize,
   pub refresh_level: usize,
   pub total: usize,
-  current_style: [f32; 18],
+  current_style: [f64; 18],
   current_unit: [usize; 18],
-  computed_style: [f32; 18],
-  transform: [f32; 16],
-  matrix: [f32; 16],
-  matrix_event: [f32; 16],
-  pub opacity: f32,
+  computed_style: [f64; 18],
+  transform: [f64; 16],
+  matrix: [f64; 16],
+  matrix_event: [f64; 16],
+  pub opacity: f64,
   animations: Vec<*mut Animation>,
 }
 
@@ -66,6 +68,7 @@ impl Node {
   }
 
   pub fn add_ani(&mut self, animation: *mut Animation) -> () {
+    let animation = wasm_ptr::transform_mut(animation);
     self.animations.push(animation);
   }
 
@@ -84,10 +87,10 @@ impl Node {
     self.animations.clear();
   }
 
-  pub fn set_style(&mut self, x: f32, y: f32, offset_width: f32, offset_height: f32,
-                   cs0: f32, cs1: f32, cs2: f32, cs3: f32, cs4: f32, cs5: f32,
-                   cs6: f32, cs7: f32, cs8: f32, cs9: f32, cs10: f32, cs11: f32, cs12: f32,
-                   cs13: f32, cs14: f32, cs15: f32, cs16: f32, cs17: f32,
+  pub fn set_style(&mut self, x: f64, y: f64, offset_width: f64, offset_height: f64,
+                   cs0: f64, cs1: f64, cs2: f64, cs3: f64, cs4: f64, cs5: f64,
+                   cs6: f64, cs7: f64, cs8: f64, cs9: f64, cs10: f64, cs11: f64, cs12: f64,
+                   cs13: f64, cs14: f64, cs15: f64, cs16: f64, cs17: f64,
                    cu0: usize, cu1: usize, cu2: usize, cu16: usize, cu17: usize) -> () {
     self.x = x;
     self.y = y;
@@ -141,17 +144,17 @@ impl Node {
     self.cal_matrix(refresh_level::TRANSFORM);
   }
 
-  pub fn set_bbox(&mut self, xa: f32, ya: f32, xb: f32, yb: f32) -> () {
+  pub fn set_bbox(&mut self, xa: f64, ya: f64, xb: f64, yb: f64) -> () {
     self.xa = xa;
     self.ya = ya;
     self.xb = xb;
     self.yb = yb;
   }
 
-  pub fn set_transform(&mut self, a: f32, b: f32, c: f32, d: f32,
-                       e: f32, f: f32, g: f32, h: f32,
-                       i: f32, j: f32, k: f32, l: f32,
-                       m: f32, n: f32, o: f32, p: f32) -> () {
+  pub fn set_transform(&mut self, a: f64, b: f64, c: f64, d: f64,
+                       e: f64, f: f64, g: f64, h: f64,
+                       i: f64, j: f64, k: f64, l: f64,
+                       m: f64, n: f64, o: f64, p: f64) -> () {
     self.transform[0] = a;
     self.transform[1] = b;
     self.transform[2] = c;
@@ -170,10 +173,10 @@ impl Node {
     self.transform[15] = p;
   }
 
-  pub fn set_matrix(&mut self, a: f32, b: f32, c: f32, d: f32,
-                       e: f32, f: f32, g: f32, h: f32,
-                       i: f32, j: f32, k: f32, l: f32,
-                       m: f32, n: f32, o: f32, p: f32) -> () {
+  pub fn set_matrix(&mut self, a: f64, b: f64, c: f64, d: f64,
+                       e: f64, f: f64, g: f64, h: f64,
+                       i: f64, j: f64, k: f64, l: f64,
+                       m: f64, n: f64, o: f64, p: f64) -> () {
     self.matrix[0] = a;
     self.matrix[1] = b;
     self.matrix[2] = c;
@@ -192,15 +195,15 @@ impl Node {
     self.matrix[15] = p;
   }
 
-  pub fn m_ptr(&self) -> *const f32 {
+  pub fn m_ptr(&self) -> *const f64 {
     self.matrix.as_ptr()
   }
 
-  pub fn me_ptr(&self) -> *const f32 {
+  pub fn me_ptr(&self) -> *const f64 {
     self.matrix_event.as_ptr()
   }
 
-  pub fn get_op(&self) -> f32 {
+  pub fn get_op(&self) -> f64 {
     self.computed_style[OPACITY]
   }
 
@@ -208,17 +211,24 @@ impl Node {
     self.refresh_level
   }
 
-  pub fn on_frame(&mut self, diff: f32) -> usize {
+  pub fn on_frame(&mut self, mut diff: f64) -> usize {
     let mut count = 0;
     let len = self.animations.len();
     let mut res = 0;
     while count < len {
       let ani = unsafe { &mut *self.animations[count] };
-      if ani.play_state == RUNNING {
-        let len = ani.on_frame(diff);
-        if len > 0 {
-          res += len;
+      // console_log!("{}", ani.play_state);
+      // 特殊的gotoAndStop后状态，js是在调用时同步执行，这里则和running一样异步，但时间在同步时已算好
+      if ani.play_state == RUNNING || ani.play_state == GOTO {
+        let r = if ani.play_state == GOTO {
+          true
+        } else {
+          ani.on_frame(diff)
+        };
+        if r {
+          res += 1;
           let ts = ani.get_transition();
+          // console_log!("{}", ts.len());
           let mut lv = 0_usize;
           for item in ts.iter() {
             self.current_style[item.k] = item.v;
@@ -313,7 +323,6 @@ impl Node {
         let r = d2r(v);
         let sin = r.sin();
         let cos = r.cos();
-        // console_log!("{:.32} {:.32} {:.32} {:.32}", v, r, sin, cos);
         let x = self.computed_style[SCALE_X];
         let y = self.computed_style[SCALE_Y];
         let cx = cos * x;
@@ -333,11 +342,6 @@ impl Node {
         self.matrix[12] = self.transform[12] + ox - cx * ox - oy * sy;
         self.matrix[13] = self.transform[13] + oy - sx * ox - oy * cy;
       }
-      // console_log!("{:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32} {:.32}",
-      // self.transform[0], self.transform[1], self.transform[2], self.transform[3],
-      // self.transform[4], self.transform[5], self.transform[6], self.transform[7],
-      // self.transform[8], self.transform[9], self.transform[10], self.transform[11],
-      // self.transform[12], self.transform[13], self.transform[14], self.transform[15]);
       if rl & refresh_level::SCALE > 0 {
         if rl & refresh_level::SCALE_X > 0 {
           if self.computed_style[SCALE_X] == 0.0 {
@@ -451,7 +455,7 @@ impl Node {
     }
   }
 
-  fn cal_size(&self, v: f32, u: usize, parent: f32) -> f32 {
+  fn cal_size(&self, v: f64, u: usize, parent: f64) -> f64 {
     if u == style_unit::PERCENT {
       return v * parent * 0.01
     } else if u == style_unit::VW {
@@ -462,10 +466,10 @@ impl Node {
       return v * root.height * 0.01
     } else if u == style_unit::VMAX {
       let root = unsafe { &*self.root };
-      return v * f32::max(root.width, root.height) * 0.01
+      return v * f64::max(root.width, root.height) * 0.01
     } else if u == style_unit::VMIN {
       let root = unsafe { &*self.root };
-      return v * f32::min(root.width, root.height) * 0.01
+      return v * f64::min(root.width, root.height) * 0.01
     } else if u == style_unit::REM {
       let root = unsafe { &*self.root };
       return v * root.font_size
