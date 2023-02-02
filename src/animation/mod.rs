@@ -23,7 +23,6 @@ pub use animation::IDLE;
 pub use animation::RUNNING;
 pub use animation::PAUSED;
 pub use animation::FINISH;
-pub use animation::GOTO;
 
 pub use easing::Bezier;
 pub use easing::BezierEnum;

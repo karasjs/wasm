@@ -7,7 +7,6 @@ use crate::style::style_key::*;
 use crate::refresh::refresh_level;
 use crate::animation::Animation;
 use crate::animation::RUNNING;
-use crate::animation::GOTO;
 use crate::math::*;
 
 #[wasm_bindgen]
@@ -218,13 +217,8 @@ impl Node {
     while count < len {
       let ani = unsafe { &mut *self.animations[count] };
       // console_log!("{}", ani.play_state);
-      // 特殊的gotoAndStop后状态，js是在调用时同步执行，这里则和running一样异步，但时间在同步时已算好
-      if ani.play_state == RUNNING || ani.play_state == GOTO {
-        let r = if ani.play_state == GOTO {
-          true
-        } else {
-          ani.on_frame(diff)
-        };
+      if ani.play_state == RUNNING {
+        let r = ani.on_frame(diff);
         if r {
           res += 1;
           let ts = ani.get_transition();

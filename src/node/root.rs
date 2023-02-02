@@ -85,20 +85,13 @@ impl Root {
       res += node.on_frame(diff);
       count += 1;
     }
-    // 有动画执行了变更，需要遍历节点计算matrix和opacity
-    if res > 0 {
-      self.refresh();
-    }
     res
   }
 
   // 每帧刷新前调用，计算节点列表的matrix和opacity
-  fn refresh(&mut self) -> () {
+  pub fn refresh(&mut self) -> () {
     let mut count = 1;
     let len = self.nodes.len();
-    if len == 0 {
-      return
-    }
     self.rl.resize(len, refresh_level::NONE);
     self.me.resize(len, [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]);
     self.op.resize(len, 1.0);

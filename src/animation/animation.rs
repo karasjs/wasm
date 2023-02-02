@@ -25,7 +25,6 @@ pub const IDLE: u8 = 0;
 pub const RUNNING: u8 = 1;
 pub const PAUSED: u8 = 2;
 pub const FINISH: u8 = 3;
-pub const GOTO: u8 = 4;
 
 struct FrameItem {
   k: usize,
@@ -219,12 +218,15 @@ impl Animation {
     let current_frames = if self.is_reverse { &self.frames_r } else { &self.frames };
     let is_last_count = self.play_count >= self.iterations - 1;
     let length = current_frames.len();
+    let play_count = self.play_count;
+    let current_time = self.current_time - dur * (play_count as f64);
     // 只有2帧可优化，否则2分查找当前帧
     let index = if length == 2 {
-      if self.current_time < dur { 0 } else { 1 }
+      if current_time < dur { 0 } else { 1 }
     } else {
-      binary_search(0, length - 1, self.current_time, current_frames)
+      binary_search(0, length - 1, current_time, current_frames)
     };
+    let current_frame = &current_frames[index];
     // 最后一帧结束动画，仅最后一轮才会进入，需处理endDelay
     let is_last_frame = is_last_count && index == length - 1;
     let mut percent = 0_f64;
@@ -233,13 +235,12 @@ impl Animation {
     }
     // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
     else if length == 2 {
-      percent = self.current_time / self.duration; // 不能是dur，按照原本计算
+      percent = current_time / self.duration; // 不能是dur，按照原本计算
     } else {
-      let time = current_frames[index].time;
+      let time = current_frame.time;
       let total = current_frames[index + 1].time - time;
-      percent = (self.current_time - time) / total;
+      percent = (current_time - time) / total;
     }
-    let current_frame = &current_frames[index];
     // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
     // 这里和js不同，由于不需要回调，前置写在这里提前返回bool值
     if self.index == -1 || (index as isize) != self.index as isize || percent != self.percent {
@@ -250,7 +251,7 @@ impl Animation {
     }
     // 最后结束特殊处理
     if is_last_frame {
-      let in_end_delay = self.current_time < dur;
+      let in_end_delay = current_time < dur;
       // let keys = if self.fill == FORWARDS || self.fill == BOTH {} else {}
       if !self.is_end_delay {
         self.is_end_delay = true;
