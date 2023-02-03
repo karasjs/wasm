@@ -5,8 +5,7 @@ use crate::node::Root;
 use crate::style::style_unit;
 use crate::style::style_key::*;
 use crate::refresh::refresh_level;
-use crate::animation::Animation;
-use crate::animation::RUNNING;
+use crate::animation::{Animation, RUNNING};
 use crate::math::*;
 
 #[wasm_bindgen]
@@ -140,7 +139,7 @@ impl Node {
     self.computed_style[15] = cs15;
     self.computed_style[16] = self.cal_size(cs16, cu16, offset_width);
     self.computed_style[17] = self.cal_size(cs17, cu17, offset_height);
-    self.cal_matrix(refresh_level::TRANSFORM);
+    self.cal_matrix(refresh_level::REFLOW);
   }
 
   pub fn set_bbox(&mut self, xa: f64, ya: f64, xb: f64, yb: f64) -> () {
@@ -216,55 +215,11 @@ impl Node {
     let mut res = 0;
     while count < len {
       let ani = unsafe { &mut *self.animations[count] };
-      // console_log!("{}", ani.play_state);
       if ani.play_state == RUNNING {
         let r = ani.on_frame(diff);
         if r {
           res += 1;
-          let ts = ani.get_transition();
-          // console_log!("{}", ts.len());
-          let mut lv = 0_usize;
-          for item in ts.iter() {
-            self.current_style[item.k] = item.v;
-            self.current_unit[item.k] = item.u;
-            if item.k == TRANSLATE_X {
-              lv |= refresh_level::TRANSLATE_X;
-            } else if item.k == TRANSLATE_Y {
-              lv |= refresh_level::TRANSLATE_Y;
-            } else if item.k == TRANSLATE_Z {
-              lv |= refresh_level::TRANSLATE_Z;
-            } else if item.k == ROTATE_X {
-              lv |= refresh_level::TRANSFORM;
-            } else if item.k == ROTATE_Y {
-              lv |= refresh_level::TRANSFORM;
-            } else if item.k == ROTATE_Z {
-              lv |= refresh_level::ROTATE_Z;
-            } else if item.k == SCALE_X {
-              lv |= refresh_level::SCALE_X;
-            } else if item.k == SCALE_Y {
-              lv |= refresh_level::SCALE_Y;
-            } else if item.k == SCALE_Z {
-              lv |= refresh_level::SCALE_Z;
-            } else if item.k == SKEW_X {
-              lv |= refresh_level::TRANSFORM;
-            } else if item.k == SKEW_Y {
-              lv |= refresh_level::TRANSFORM;
-            } else if item.k == OPACITY {
-              lv |= refresh_level::OPACITY;
-            } else if item.k == TFO_X {
-              lv |= refresh_level::TRANSFORM;
-            } else if item.k == TFO_Y {
-              lv |= refresh_level::TRANSFORM;
-            }
-          }
-          if lv & refresh_level::TRANSFORM_ALL > 0 {
-            self.cal_matrix(lv);
-          }
-          if lv & refresh_level::OPACITY > 0 {
-            self.computed_style[OPACITY]
-              = self.current_style[OPACITY];
-          }
-          self.refresh_level |= lv;
+          self.cal_trans(ani);
         }
       }
       count += 1;
@@ -272,9 +227,55 @@ impl Node {
     res
   }
 
-  fn cal_matrix(&mut self, rl: usize) -> () {
+  pub fn cal_trans(&mut self, ani: &mut Animation) {
+    let ts = ani.get_transition();
+    let mut lv = 0_usize;
+    for item in ts.iter() {
+      self.current_style[item.k] = item.v;
+      self.current_unit[item.k] = item.u;
+      if item.k == TRANSLATE_X {
+        lv |= refresh_level::TRANSLATE_X;
+      } else if item.k == TRANSLATE_Y {
+        lv |= refresh_level::TRANSLATE_Y;
+      } else if item.k == TRANSLATE_Z {
+        lv |= refresh_level::TRANSLATE_Z;
+      } else if item.k == ROTATE_X {
+        lv |= refresh_level::TRANSFORM;
+      } else if item.k == ROTATE_Y {
+        lv |= refresh_level::TRANSFORM;
+      } else if item.k == ROTATE_Z {
+        lv |= refresh_level::ROTATE_Z;
+      } else if item.k == SCALE_X {
+        lv |= refresh_level::SCALE_X;
+      } else if item.k == SCALE_Y {
+        lv |= refresh_level::SCALE_Y;
+      } else if item.k == SCALE_Z {
+        lv |= refresh_level::SCALE_Z;
+      } else if item.k == SKEW_X {
+        lv |= refresh_level::TRANSFORM;
+      } else if item.k == SKEW_Y {
+        lv |= refresh_level::TRANSFORM;
+      } else if item.k == OPACITY {
+        lv |= refresh_level::OPACITY;
+      } else if item.k == TFO_X {
+        lv |= refresh_level::TRANSFORM;
+      } else if item.k == TFO_Y {
+        lv |= refresh_level::TRANSFORM;
+      }
+    }
+    if lv & refresh_level::TRANSFORM_ALL > 0 {
+      self.cal_matrix(lv);
+    }
+    if lv & refresh_level::OPACITY > 0 {
+      self.computed_style[OPACITY]
+        = self.current_style[OPACITY];
+    }
+    self.refresh_level |= lv;
+  }
+
+  pub fn cal_matrix(&mut self, rl: usize) -> () {
     let mut optimize = true;
-    if rl & refresh_level::TRANSFORM > 0 {
+    if rl & refresh_level::TRANSFORM > 0 || rl >= refresh_level::REPAINT {
       optimize = false;
     } else if rl & refresh_level::SCALE_X > 0 && self.computed_style[SCALE_X] == 0.0 {
       optimize = false;

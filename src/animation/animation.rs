@@ -1,6 +1,8 @@
 use std::f64;
 use std::cmp;
 use wasm_bindgen::prelude::*;
+use crate::{wasm_ptr};
+use crate::node::Node;
 use crate::animation::{Bezier, easing};
 
 pub const DEFAULT: u8 = 0;
@@ -70,7 +72,7 @@ pub(crate) struct Transition {
 
 #[wasm_bindgen]
 pub struct Animation {
-  // node: *mut Node,
+  node: *mut Node,
   frames: Vec<Frame>,
   frames_r: Vec<Frame>,
   direction: u8,
@@ -106,12 +108,13 @@ pub struct Animation {
 
 #[wasm_bindgen]
 impl Animation {
-  pub fn new(direction: u8, duration: f64, fps: usize,
+  pub fn new(node: *mut Node, direction: u8, duration: f64, fps: usize,
              delay: f64, end_delay: f64, fill: u8, playback_rate: f64,
              iterations: usize, area_start: f64, area_duration: f64, easing: u8) -> Animation {
-    let frames = Vec::new();
+    let node = wasm_ptr::transform_mut(node);
     Animation {
-      frames,
+      node,
+      frames: Vec::new(),
       frames_r: Vec::new(),
       direction,
       duration,
@@ -313,7 +316,17 @@ impl Animation {
 
   pub fn goto_stop(&mut self, v: f64, dur: f64) -> bool {
     self.current_time = v;
-    self.cal_current(dur, true)
+    self.play_count = (v / dur).floor() as usize;
+    if self.play_count > self.iterations - 1 {
+      self.play_count = self.iterations - 1;
+    }
+    self.init_current_frames(self.play_count);
+    let res = self.cal_current(dur, true);
+    if res {
+      let node = unsafe { &mut *self.node };
+      node.cal_trans(self);
+    }
+    res
   }
 
   pub(crate) fn get_transition(&mut self) -> &Vec<Transition> {
