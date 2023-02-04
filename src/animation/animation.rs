@@ -217,7 +217,7 @@ impl Animation {
   }
 
   // 参数和js也不同，直接访问self以及last的判断
-  pub fn cal_current(&mut self, dur: f64, from_goto: bool) -> bool {
+  pub fn cal_current(&mut self, dur: f64) -> bool {
     let current_frames = if self.is_reverse { &self.frames_r } else { &self.frames };
     let is_last_count = self.play_count >= self.iterations - 1;
     let length = current_frames.len();
@@ -262,7 +262,6 @@ impl Animation {
         self.play_count += 1;
         self.finished = true;
       }
-      if from_goto {} else {}
     } else {
       self.transition = cal_intermediate_style(current_frame, percent);
       // 和js不同无需处理，等待root刷新计算调用
@@ -311,7 +310,7 @@ impl Animation {
       self.play_count = play_count;
       self.init_current_frames(play_count);
     }
-    self.cal_current(dur, false)
+    self.cal_current(dur)
   }
 
   pub fn goto_stop(&mut self, v: f64, dur: f64) -> bool {
@@ -321,7 +320,7 @@ impl Animation {
       self.play_count = self.iterations - 1;
     }
     self.init_current_frames(self.play_count);
-    let res = self.cal_current(dur, true);
+    let res = self.cal_current(dur);
     if res {
       let node = unsafe { &mut *self.node };
       node.cal_trans(self);
