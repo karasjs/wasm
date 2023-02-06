@@ -90,7 +90,7 @@ impl Root {
 
   // 每帧刷新前调用，计算节点列表的matrix和opacity
   pub fn refresh(&mut self) -> () {
-    let mut count = 1;
+    let mut count = 0;
     let len = self.nodes.len();
     self.rl.resize(len, refresh_level::NONE);
     self.me.resize(len, [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]);
@@ -99,51 +99,17 @@ impl Root {
     let mut p_list: Vec<usize> = Vec::new();
     let mut last_lv: usize = 0;
     let mut parent: usize = 0; // 存下标，取op/me上的
-    // 先设置第0个root，后续则是循环
+    // // 先设置第0个root，后续则是循环
     let root = unsafe { &mut *self.nodes[0] };
-    let (c1, c2) = unsafe {
-      (
-        & *(root.m_ptr() as *const [f64; 16] as *mut [f64; 16]),
-        &mut *(root.me_ptr() as *const [f64; 16] as *mut [f64; 16]),
-      )
-    };
-    assign_m(c2, c1);
-    self.rl[0] = root.refresh_level;
-    assign_m(&mut self.me[0], c2);
-    root.opacity = root.get_op();
-    self.op[0] = root.opacity;
     let cx = root.offset_width * 0.5;
     let cy = root.offset_height * 0.5;
-    // webgl需计算节点的坐标
-    if self.mode == WEBGL {
-      let (x1, y1, z1, w1,
-        x2, y2, z2, w2,
-        x3, y3, z3, w3,
-        x4, y4, z4, w4)
-        = cal_rect_point(root.xa, root.yb, root.xb, root.ya, c2);
-      let mut z = f64::max(z1.abs(), z2.abs());
-      z = f64::max(z, z3.abs());
-      z = f64::max(z, z4.abs());
-      if z != 0.0 {
-        z = f64::max(z, (cx * cx + cy * cy).sqrt());
-      }
-      let (x1, y1, z1, w1) = convert_coords2_gl(x1, y1, z1, w1, cx, cy, z);
-      let (x2, y2, z2, w2) = convert_coords2_gl(x2, y2, z2, w2, cx, cy, z);
-      let (x3, y3, z3, w3) = convert_coords2_gl(x3, y3, z3, w3, cx, cy, z);
-      let (x4, y4, z4, w4) = convert_coords2_gl(x4, y4, z4, w4, cx, cy, z);
-      self.vt[0] = [
-        x1, y1, z1, w1,
-        x2, y2, z2, w2,
-        x3, y3, z3, w3,
-        x4, y4, w4, z4,
-      ];
-    }
     // 节点列表
     while count < len {
-      let node = unsafe { &mut * self.nodes[count] };
+      let node = unsafe { &mut *self.nodes[count] };
       let lv = node.lv;
+      if lv == 0 {}
       // lv变大说明是child
-      if lv > last_lv {
+      else if lv > last_lv {
         parent = count - 1;
         p_list.push(parent);
       }
@@ -162,12 +128,19 @@ impl Root {
           &mut *(node.me_ptr() as *const [f64; 16] as *mut [f64; 16]),
         )
       };
-      let p = unsafe { & *self.nodes[parent] };
-      let pm = unsafe { & *(p.m_ptr() as *const [f64; 16] as *mut [f64; 16]) };
-      multiply2(pm, m1,m2);
+      // 除了root的子节点需要预乘matrix
+      if count == 0 {
+        assign_m(m2, m1);
+        node.opacity = node.get_op();
+      }
+      else {
+        let p = unsafe { & *self.nodes[parent] };
+        let pm = unsafe { & *(p.m_ptr() as *const [f64; 16] as *mut [f64; 16]) };
+        multiply2(pm, m1, m2);
+        node.opacity = p.opacity * node.get_op();
+      }
       self.rl[count] = node.refresh_level;
       assign_m(&mut self.me[count], m2);
-      node.opacity = p.opacity * node.get_op();
       self.op[count] = node.opacity;
       // webgl需计算节点的坐标
       if self.mode == WEBGL {
