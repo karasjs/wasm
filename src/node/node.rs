@@ -29,7 +29,7 @@ pub struct Node {
   transform: [f64; 16],
   matrix: [f64; 16],
   matrix_event: [f64; 16],
-  pub opacity: f64,
+  pub opacity: f64, // 存储包含父继承的最终世界opacity
   animations: Vec<*mut Animation>,
 }
 
@@ -140,6 +140,18 @@ impl Node {
     self.computed_style[16] = self.cal_size(cs16, cu16, offset_width);
     self.computed_style[17] = self.cal_size(cs17, cu17, offset_height);
     self.cal_matrix(refresh_level::REFLOW);
+  }
+
+  // 文本style复用parent，所以只需要设置尺寸位置
+  pub fn set_txt(&mut self, x: f64, y: f64, offset_width: f64, offset_height: f64) -> () {
+    self.x = x;
+    self.y = y;
+    self.offset_width = offset_width;
+    self.offset_height = offset_height;
+    self.xa = x;
+    self.ya = y;
+    self.xb = x + offset_width;
+    self.yb = y + offset_height;
   }
 
   pub fn set_bbox(&mut self, xa: f64, ya: f64, xb: f64, yb: f64) -> () {

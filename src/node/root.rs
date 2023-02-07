@@ -99,7 +99,7 @@ impl Root {
     let mut p_list: Vec<usize> = Vec::new();
     let mut last_lv: usize = 0;
     let mut parent: usize = 0; // 存下标，取op/me上的
-    // // 先设置第0个root，后续则是循环
+    // 先设置第0个root，后续则是循环
     let root = unsafe { &mut *self.nodes[0] };
     let cx = root.offset_width * 0.5;
     let cy = root.offset_height * 0.5;
@@ -132,23 +132,34 @@ impl Root {
       if count == 0 {
         assign_m(m2, m1);
         node.opacity = node.get_op();
+        self.rl[count] = node.refresh_level;
+        assign_m(&mut self.me[count], m2);
+        self.op[count] = node.opacity;
+      }
+      // 文字节点直接用父的matrix和opacity
+      else if node.is_text {
+        let p = unsafe { & *self.nodes[parent] };
+        let pm = unsafe { & *(p.me_ptr() as *const [f64; 16] as *mut [f64; 16]) };
+        self.rl[count] = p.refresh_level;
+        assign_m(&mut self.me[count], pm);
+        self.op[count] = p.opacity;
       }
       else {
         let p = unsafe { & *self.nodes[parent] };
-        let pm = unsafe { & *(p.m_ptr() as *const [f64; 16] as *mut [f64; 16]) };
+        let pm = unsafe { & *(p.me_ptr() as *const [f64; 16] as *mut [f64; 16]) };
         multiply2(pm, m1, m2);
         node.opacity = p.opacity * node.get_op();
+        self.rl[count] = node.refresh_level;
+        assign_m(&mut self.me[count], m2);
+        self.op[count] = node.opacity;
       }
-      self.rl[count] = node.refresh_level;
-      assign_m(&mut self.me[count], m2);
-      self.op[count] = node.opacity;
       // webgl需计算节点的坐标
       if self.mode == WEBGL {
         let (x1, y1, z1, w1,
           x2, y2, z2, w2,
           x3, y3, z3, w3,
           x4, y4, z4, w4)
-          = cal_rect_point(node.xa, node.yb, node.xb, node.ya, m2);
+          = cal_rect_point(node.xa, node.yb, node.xb, node.ya, &self.me[count]);
         let mut z = f64::max(z1.abs(), z2.abs());
         z = f64::max(z, z3.abs());
         z = f64::max(z, z4.abs());
