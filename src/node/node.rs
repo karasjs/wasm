@@ -158,8 +158,8 @@ impl Node {
   pub fn set_bbox(&mut self, xa: f64, ya: f64, xb: f64, yb: f64) -> () {
     self.xa = xa;
     self.ya = ya;
-    self.xb = xb;
-    self.yb = yb;
+    self.xb = xb.ceil();
+    self.yb = yb.ceil();
   }
 
   pub fn set_transform(&mut self, a: f64, b: f64, c: f64, d: f64,
@@ -215,7 +215,7 @@ impl Node {
   }
 
   pub fn get_op(&self) -> f64 {
-    self.computed_style[OPACITY]
+    self.opacity
   }
 
   pub fn get_rl(&self) -> usize {
