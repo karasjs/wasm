@@ -96,8 +96,9 @@ impl Node {
     self.offset_height = offset_height;
     self.xa = x;
     self.ya = y;
-    self.xb = x + offset_width;
-    self.yb = y + offset_height;
+    // cache存的尺寸都是ceil整数，为了在Page中满足尺寸，以及边缘透明需求
+    self.xb = x + offset_width.ceil();
+    self.yb = y + offset_height.ceil();
     self.current_style[0] = cs0;
     self.current_style[1] = cs1;
     self.current_style[2] = cs2;
@@ -150,8 +151,8 @@ impl Node {
     self.offset_height = offset_height;
     self.xa = x;
     self.ya = y;
-    self.xb = x + offset_width;
-    self.yb = y + offset_height;
+    self.xb = x + offset_width.ceil();
+    self.yb = y + offset_height.ceil();
   }
 
   pub fn set_bbox(&mut self, xa: f64, ya: f64, xb: f64, yb: f64) -> () {
