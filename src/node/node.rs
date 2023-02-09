@@ -175,7 +175,7 @@ impl Node {
     self.transform[15] = p;
   }
 
-  pub fn computed_style(&self) -> *const f64 {
+  pub fn computed_style_ptr(&self) -> *const f64 {
     self.computed_style.as_ptr()
   }
 
