@@ -301,78 +301,78 @@ pub fn d2r(d: f64) -> f64 {
   d * PI / 180.0
 }
 
-pub fn cal_rect_point(xa: f64, ya: f64, xb: f64, yb: f64, m: &[f64; 16])
-  -> (f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64) {
-  let (x1, y1, z1, w1) = cal_point(xa, ya, 0.0, 1.0, m);
-  let (x3, y3, z3, w3) = cal_point(xb, yb, 0.0, 1.0, m);
-  let mut x2 = 0.0;
-  let mut y2 = 0.0;
-  let mut z2 = 0.0;
-  let mut w2 = 1.0;
-  let mut x4 = 0.0;
-  let mut y4 = 0.0;
-  let mut z4 = 0.0;
-  let mut w4 = 1.0;
-  // 无旋转的时候可以少算2个点
-  if w1 == 1.0 && w3 == 1.0
-    && m[1] == 0.0 && m[2] == 0.0 && m[4] == 0.0 && m[6] == 0.0 && m[7] == 0.0 && m[8] == 0.0 {
-    x2 = x3;
-    y2 = y1;
-    z2 = z3;
-    x4 = x1;
-    y4 = y3;
-    z2 = z1;
-    z4 = z1;
-  } else {
-    (x2, y2, z2, w2) = cal_point(xb, ya, 0.0, 1.0, m);
-    (x4, y4, z4, w4) = cal_point(xa, yb, 0.0, 1.0, m);
-  }
-  (x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4)
-}
+// pub fn cal_rect_point(xa: f64, ya: f64, xb: f64, yb: f64, m: &[f64; 16])
+//   -> (f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64) {
+//   let (x1, y1, z1, w1) = cal_point(xa, ya, 0.0, 1.0, m);
+//   let (x3, y3, z3, w3) = cal_point(xb, yb, 0.0, 1.0, m);
+//   let mut x2 = 0.0;
+//   let mut y2 = 0.0;
+//   let mut z2 = 0.0;
+//   let mut w2 = 1.0;
+//   let mut x4 = 0.0;
+//   let mut y4 = 0.0;
+//   let mut z4 = 0.0;
+//   let mut w4 = 1.0;
+//   // 无旋转的时候可以少算2个点
+//   if w1 == 1.0 && w3 == 1.0
+//     && m[1] == 0.0 && m[2] == 0.0 && m[4] == 0.0 && m[6] == 0.0 && m[7] == 0.0 && m[8] == 0.0 {
+//     x2 = x3;
+//     y2 = y1;
+//     z2 = z3;
+//     x4 = x1;
+//     y4 = y3;
+//     z2 = z1;
+//     z4 = z1;
+//   } else {
+//     (x2, y2, z2, w2) = cal_point(xb, ya, 0.0, 1.0, m);
+//     (x4, y4, z4, w4) = cal_point(xa, yb, 0.0, 1.0, m);
+//   }
+//   (x1, y1, z1, w1, x2, y2, z2, w2, x3, y3, z3, w3, x4, y4, z4, w4)
+// }
 
-pub fn cal_point(x: f64, y: f64, z: f64, w: f64, m: &[f64; 16]) -> (f64, f64, f64, f64) {
-  if !is_e(m) {
-    let a1 = m[0];
-    let b1 = m[1];
-    let c1 = m[2];
-    let d1 = m[3];
-    let a2 = m[4];
-    let b2 = m[5];
-    let c2 = m[6];
-    let d2 = m[7];
-    let a3 = m[8];
-    let b3 = m[9];
-    let c3 = m[10];
-    let d3 = m[11];
-    let a4 = m[12];
-    let b4 = m[13];
-    let c4 = m[14];
-    let d4 = m[15];
-    let mut x0 = if a1 == 1.0 { x } else { x * a1 };
-    if a2 != 0.0 {
-      x0 += y * a2;
-    }
-    x0 += if w == 1.0 { a4 } else { a4 * w };
-    let mut y0 = if b1 == 1.0 { x } else { x * b1 };
-    if b2 != 0.0 {
-      y0 += y * b2;
-    }
-    y0 += if w == 1.0 { b4 } else { b4 * w };
-    let mut z0 = 0_f64;
-    let mut w0 = w;
-    if d1 != 0.0 || d2 != 0.0 || d3 != 0.0 {
-      w0 = x * d1 + y * d2 + z * d3 + d4 * w;
-    } else if d4 != 1.0 {
-      w0 *= d4;
-    }
-    if z != 0.0 {
-      x0 += z * a3;
-      y0 += z * b3;
-      z0 = x * c1 + y * c2 + c4 + z * c3;
-    } else if c1 != 0.0 || c2 != 0.0 || c4 != 0.0 {
-      z0 = x * c1 + y * c2 + c4;
-    }
-    return (x0, y0, z0, w0)
-  }
-  (x, y, z, w)
-}
+// pub fn cal_point(x: f64, y: f64, z: f64, w: f64, m: &[f64; 16]) -> (f64, f64, f64, f64) {
+//   if !is_e(m) {
+//     let a1 = m[0];
+//     let b1 = m[1];
+//     let c1 = m[2];
+//     let d1 = m[3];
+//     let a2 = m[4];
+//     let b2 = m[5];
+//     let c2 = m[6];
+//     let d2 = m[7];
+//     let a3 = m[8];
+//     let b3 = m[9];
+//     let c3 = m[10];
+//     let d3 = m[11];
+//     let a4 = m[12];
+//     let b4 = m[13];
+//     let c4 = m[14];
+//     let d4 = m[15];
+//     let mut x0 = if a1 == 1.0 { x } else { x * a1 };
+//     if a2 != 0.0 {
+//       x0 += y * a2;
+//     }
+//     x0 += if w == 1.0 { a4 } else { a4 * w };
+//     let mut y0 = if b1 == 1.0 { x } else { x * b1 };
+//     if b2 != 0.0 {
+//       y0 += y * b2;
+//     }
+//     y0 += if w == 1.0 { b4 } else { b4 * w };
+//     let mut z0 = 0_f64;
+//     let mut w0 = w;
+//     if d1 != 0.0 || d2 != 0.0 || d3 != 0.0 {
+//       w0 = x * d1 + y * d2 + z * d3 + d4 * w;
+//     } else if d4 != 1.0 {
+//       w0 *= d4;
+//     }
+//     if z != 0.0 {
+//       x0 += z * a3;
+//       y0 += z * b3;
+//       z0 = x * c1 + y * c2 + c4 + z * c3;
+//     } else if c1 != 0.0 || c2 != 0.0 || c4 != 0.0 {
+//       z0 = x * c1 + y * c2 + c4;
+//     }
+//     return (x0, y0, z0, w0)
+//   }
+//   (x, y, z, w)
+// }

@@ -1,7 +1,7 @@
 use std::f64;
 use wasm_bindgen::prelude::*;
 use crate::{wasm_ptr};
-use crate::math::{assign_m, cal_rect_point, multiply2};
+use crate::math::{assign_m, multiply2};
 use crate::node::Node;
 use crate::refresh::refresh_level;
 
@@ -153,35 +153,8 @@ impl Root {
         assign_m(&mut self.me[count], m2);
         self.op[count] = node.opacity;
       }
-      // webgl需计算节点的坐标
-      if self.mode == WEBGL {
-        let (x1, y1, z1, w1,
-          x2, y2, z2, w2,
-          x3, y3, z3, w3,
-          x4, y4, z4, w4)
-          = cal_rect_point(node.xa, node.yb, node.xb, node.ya, &self.me[count]);
-        let mut z = f64::max(z1.abs(), z2.abs());
-        z = f64::max(z, z3.abs());
-        z = f64::max(z, z4.abs());
-        if z != 0.0 {
-          z = f64::max(z, (cx * cx + cy * cy).sqrt());
-        }
-        let (x1, y1, z1, w1) = convert_coords2_gl(x1, y1, z1, w1, cx, cy, z);
-        let (x2, y2, z2, w2) = convert_coords2_gl(x2, y2, z2, w2, cx, cy, z);
-        let (x3, y3, z3, w3) = convert_coords2_gl(x3, y3, z3, w3, cx, cy, z);
-        let (x4, y4, z4, w4) = convert_coords2_gl(x4, y4, z4, w4, cx, cy, z);
-        self.vt[count] = [
-          x1, y1, z1, w1,
-          x2, y2, z2, w2,
-          x3, y3, z3, w3,
-          x4, y4, z4, w4,
-        ];
-      }
-      // 有total的局部根节点可以跳过子节点
+      // 和js不同不跳total，因为matrix等所有数据都存在这里只一份
       count += 1;
-      if node.total > 0 {
-        count += node.total;
-      }
     }
   }
 

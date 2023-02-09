@@ -22,7 +22,6 @@ pub struct Node {
   pub yb: f64,
   pub lv: usize,
   pub refresh_level: usize,
-  pub total: usize,
   current_style: [f64; 18],
   current_unit: [usize; 18],
   computed_style: [f64; 18],
@@ -49,7 +48,6 @@ impl Node {
       yb: 0.0,
       lv: refresh_level::NONE,
       refresh_level: 0,
-      total: 0,
       current_style: [0.0; 18],
       current_unit: [0; 18],
       computed_style: [0.0; 18],
@@ -155,13 +153,6 @@ impl Node {
     self.yb = y + offset_height.ceil();
   }
 
-  pub fn set_bbox(&mut self, xa: f64, ya: f64, xb: f64, yb: f64) -> () {
-    self.xa = xa;
-    self.ya = ya;
-    self.xb = xb.ceil();
-    self.yb = yb.ceil();
-  }
-
   pub fn set_transform(&mut self, a: f64, b: f64, c: f64, d: f64,
                        e: f64, f: f64, g: f64, h: f64,
                        i: f64, j: f64, k: f64, l: f64,
@@ -184,26 +175,12 @@ impl Node {
     self.transform[15] = p;
   }
 
-  pub fn set_matrix(&mut self, a: f64, b: f64, c: f64, d: f64,
-                       e: f64, f: f64, g: f64, h: f64,
-                       i: f64, j: f64, k: f64, l: f64,
-                       m: f64, n: f64, o: f64, p: f64) -> () {
-    self.matrix[0] = a;
-    self.matrix[1] = b;
-    self.matrix[2] = c;
-    self.matrix[3] = d;
-    self.matrix[4] = e;
-    self.matrix[5] = f;
-    self.matrix[6] = g;
-    self.matrix[7] = h;
-    self.matrix[8] = i;
-    self.matrix[9] = j;
-    self.matrix[10] = k;
-    self.matrix[11] = l;
-    self.matrix[12] = m;
-    self.matrix[13] = n;
-    self.matrix[14] = o;
-    self.matrix[15] = p;
+  pub fn computed_style(&self) -> *const f64 {
+    self.computed_style.as_ptr()
+  }
+
+  pub fn transform_ptr(&self) -> *const f64 {
+    self.transform.as_ptr()
   }
 
   pub fn m_ptr(&self) -> *const f64 {
