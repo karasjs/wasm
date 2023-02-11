@@ -255,14 +255,6 @@ impl Animation {
       let total = current_frames[index + 1].time - time;
       percent = (current_time - time) / total;
     }
-    // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
-    // 这里和js不同，由于不需要回调，前置写在这里提前返回bool值
-    if self.index == -1 || (index as isize) != self.index as isize || percent != self.percent {
-      self.index = index as isize;
-      self.percent = percent;
-    } else {
-      return false // 同帧同时间无需更新
-    }
     // 最后结束特殊处理
     if is_last_frame {
       if self.fill == FORWARDS || self.fill == BOTH {
@@ -272,8 +264,6 @@ impl Animation {
           self.end = true;
           let node = unsafe { & *self.node };
           self.transition = cal_last_style(node, current_frame);
-        } else {
-          return false // 非首次进入endDelay无刷新
         }
         // 有可能刚进endDelay（只有1ms很短）就超过直接finish了，所以只用时间对比
         if current_time >= dur + self.end_delay {
@@ -283,7 +273,13 @@ impl Animation {
         }
       } else {}
     } else {
-      self.transition = cal_intermediate_style(current_frame, percent);
+      // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
+      // 这里和js不同，由于不需要回调，前置写在这里判断是否需要计算transition
+      if self.index == -1 || (index as isize) != (self.index as isize) || percent != self.percent {
+        self.index = index as isize;
+        self.percent = percent;
+        self.transition = cal_intermediate_style(current_frame, percent);
+      }
       // 和js不同无需处理，等待root刷新计算调用
     }
     self.transition.len() > 0
@@ -338,7 +334,7 @@ impl Animation {
     self.cal_current(dur)
   }
 
-  // 用0124来枚举当前状态，返回是否finish
+  // 用01248来枚举当前状态，返回是否finish
   pub fn after(&mut self) -> bool {
     let node = unsafe { & *self.node };
     let root = unsafe { &mut *node.root };
@@ -347,15 +343,15 @@ impl Animation {
       root.add_am_state(0);
       return false
     }
-    let mut n = 0;
+    let mut n = 1;
     let mut res = false;
     if self.begin {
       self.begin = false;
-      n += 1;
+      n += 2;
     }
     if self.end {
       self.end = false;
-      n += 2;
+      n += 4;
     }
     if self.finished {
       self.begin = false;
@@ -363,7 +359,7 @@ impl Animation {
       self.is_delay = false;
       self.is_end_delay = false;
       self.finished = false;
-      n += 4;
+      n += 8;
       res = true;
     }
     root.add_am_state(n);

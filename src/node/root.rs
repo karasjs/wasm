@@ -19,7 +19,7 @@ pub struct Root {
   me: Vec<[f64; 16]>,
   op: Vec<f64>,
   vt: Vec<[f64; 16]>,
-  am_states: Vec<usize>,
+  am_states: Vec<u8>,
 }
 
 #[wasm_bindgen]
@@ -104,7 +104,7 @@ impl Root {
     res
   }
 
-  pub fn add_am_state(&mut self, n: usize) -> () {
+  pub fn add_am_state(&mut self, n: u8) -> () {
     self.am_states.push(n);
   }
 
@@ -194,7 +194,7 @@ impl Root {
     self.vt.as_ptr()
   }
 
-  pub fn am_states_ptr(&self) -> *const usize {
+  pub fn am_states_ptr(&self) -> *const u8 {
     self.am_states.as_ptr()
   }
 }

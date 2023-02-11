@@ -225,10 +225,8 @@ impl Node {
     while count < len {
       let ani = unsafe { &mut *self.animations[count] };
       if ani.play_state == RUNNING {
-        // 动画finish返回true计数
-        if ani.after() {
-          res += 1;
-        }
+        ani.after();
+        res += 1;
       }
       count += 1;
     }
