@@ -367,6 +367,7 @@ impl Animation {
   }
 
   pub fn goto_stop(&mut self, v: f64, dur: f64) -> bool {
+    self.play_state = PAUSED;
     self.current_time = v;
     self.play_count = (v / dur).floor() as usize;
     if self.play_count > self.iterations - 1 {

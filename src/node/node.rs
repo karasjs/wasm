@@ -489,4 +489,16 @@ impl Node {
       return v == self.computed_style[k]
     }
   }
+
+  pub fn update_style(&mut self, k: usize, v: f64, u: usize) -> () {
+    self.current_style[k] = v;
+    self.current_unit[k] = u;
+    if k == TRANSLATE_X || k == TRANSLATE_Z || k == TFO_X {
+      self.computed_style[k] = self.cal_size(v, u, self.offset_width);
+    } else if k == TRANSLATE_Y {
+      self.computed_style[k] = self.cal_size(v, u, self.offset_height);
+    } else {
+      self.computed_style[k] = v;
+    }
+  }
 }
