@@ -98,7 +98,7 @@ pub struct Animation {
   is_end_delay: bool,
   begin: bool,
   end: bool,
-  finished: bool,
+  pub finished: bool,
   last_index: usize,
   last_percent: f64,
   pub index: isize,
@@ -202,6 +202,17 @@ impl Animation {
     }
   }
 
+  pub fn play(&mut self) {
+    self.current_time = 0_f64;
+    self.play_count = 0;
+    self.play_state = RUNNING;
+    self.first_play = true;
+    self.begin = true;
+    self.end = false;
+    self.is_delay = false;
+    self.is_end_delay = false;
+  }
+
   // 和js不同，不设置currentFrames，用is_reverse标识
   pub fn init_current_frames(&mut self, play_count: usize) -> () {
     if self.direction == ALTERNATE || self.direction == ALTERNATE_REVERSE {
@@ -254,23 +265,36 @@ impl Animation {
     }
     // 最后结束特殊处理
     if is_last_frame {
-      let in_end_delay = current_time < dur;
-      // let keys = if self.fill == FORWARDS || self.fill == BOTH {} else {}
-      if !self.is_end_delay {
-        self.is_end_delay = true;
-        self.end = true;
-        self.play_count += 1;
-        self.finished = true;
-      }
+      if self.fill == FORWARDS || self.fill == BOTH {
+        // 第一次进入endDelay触发后续不再，并且设置__end标识在after触发END事件
+        if !self.is_end_delay {
+          self.is_end_delay = true;
+          self.end = true;
+          let node = unsafe { & *self.node };
+          self.transition = cal_last_style(node, current_frame);
+        } else {
+          return false // 非首次进入endDelay无刷新
+        }
+        // 有可能刚进endDelay（只有1ms很短）就超过直接finish了，所以只用时间对比
+        if current_time >= dur + self.end_delay {
+          self.play_count += 1;
+          self.finished = true;
+          // TODO originStyle
+        }
+      } else {}
     } else {
       self.transition = cal_intermediate_style(current_frame, percent);
       // 和js不同无需处理，等待root刷新计算调用
     }
-    true
+    self.transition.len() > 0
   }
 
-  pub fn on_frame(&mut self, mut diff: f64) -> bool {
-    let dur = if self.area_duration > 0.0 { f64::min(self.area_duration, self.duration) } else { self.duration };
+  pub fn before(&mut self, mut diff: f64) -> bool {
+    let dur = if self.area_duration > 0.0 {
+      f64::min(self.area_duration, self.duration)
+    } else {
+      self.duration
+    };
     // 播放时间累加，并且考虑播放速度加成
     if self.playback_rate != 1.0 {
       diff *= self.playback_rate;
@@ -283,6 +307,7 @@ impl Animation {
       self.fps_time += diff;
       diff = self.fps_time;
       if diff < 1000.0 / (self.fps as f64) {
+        self.in_fps = true;
         return false
       }
     }
@@ -311,6 +336,38 @@ impl Animation {
       self.init_current_frames(play_count);
     }
     self.cal_current(dur)
+  }
+
+  // 用0124来枚举当前状态，返回是否finish
+  pub fn after(&mut self) -> bool {
+    let node = unsafe { & *self.node };
+    let root = unsafe { &mut *node.root };
+    if self.in_fps {
+      self.in_fps = false;
+      root.add_am_state(0);
+      return false
+    }
+    let mut n = 0;
+    let mut res = false;
+    if self.begin {
+      self.begin = false;
+      n += 1;
+    }
+    if self.end {
+      self.end = false;
+      n += 2;
+    }
+    if self.finished {
+      self.begin = false;
+      self.end = false;
+      self.is_delay = false;
+      self.is_end_delay = false;
+      self.finished = false;
+      n += 4;
+      res = true;
+    }
+    root.add_am_state(n);
+    res
   }
 
   pub fn goto_stop(&mut self, v: f64, dur: f64) -> bool {
@@ -386,6 +443,20 @@ fn cal_intermediate_style(current_frame: &Frame, mut percent: f64) -> Vec<Transi
       ts.push(Transition {
         k: item.k,
         v: item.v + item.d * percent,
+        u: item.u,
+      });
+    }
+  }
+  ts
+}
+
+fn cal_last_style(node: &Node, current_frame: &Frame) -> Vec<Transition> {
+  let mut ts: Vec<Transition> = Vec::new();
+  for item in current_frame.list.iter() {
+    if node.equal_style(item.k, item.v, item.u) {
+      ts.push(Transition {
+        k: item.k,
+        v: item.v,
         u: item.u,
       });
     }

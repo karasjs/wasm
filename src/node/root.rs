@@ -19,6 +19,7 @@ pub struct Root {
   me: Vec<[f64; 16]>,
   op: Vec<f64>,
   vt: Vec<[f64; 16]>,
+  am_states: Vec<usize>,
 }
 
 #[wasm_bindgen]
@@ -34,6 +35,7 @@ impl Root {
       me: Vec::new(),
       op: Vec::new(),
       vt: Vec::new(),
+      am_states: Vec::new(),
     }
   }
 
@@ -75,17 +77,35 @@ impl Root {
     self.height = height;
   }
 
-  // 每帧raf优先存调用，传入运行时间，后续节点动画来计算transition
-  pub fn on_frame(&mut self, diff: f64) -> usize {
+  // 每帧raf优先存调用，传入运行时间，后续节点动画来计算transition，返回需要刷新动画的数量
+  pub fn before(&mut self, diff: f64) -> usize {
     let mut count = 0;
     let mut res = 0;
     let len = self.nodes.len();
     while count < len {
       let node = unsafe { &mut *self.nodes[count] };
-      res += node.on_frame(diff);
+      res += node.before(diff);
       count += 1;
     }
     res
+  }
+
+  // 返回finish结束的动画的数量
+  pub fn after(&mut self) -> usize {
+    let mut count = 0;
+    let mut res = 0;
+    let len = self.nodes.len();
+    self.am_states.clear();
+    while count < len {
+      let node = unsafe { &mut *self.nodes[count] };
+      res += node.after();
+      count += 1;
+    }
+    res
+  }
+
+  pub fn add_am_state(&mut self, n: usize) -> () {
+    self.am_states.push(n);
   }
 
   // 每帧刷新前调用，计算节点列表的matrix和opacity
@@ -172,6 +192,10 @@ impl Root {
 
   pub fn vt_ptr(&self) -> *const [f64; 16] {
     self.vt.as_ptr()
+  }
+
+  pub fn am_states_ptr(&self) -> *const usize {
+    self.am_states.as_ptr()
   }
 }
 

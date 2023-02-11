@@ -10,7 +10,7 @@ use crate::math::*;
 
 #[wasm_bindgen]
 pub struct Node {
-  root: *mut Root,
+  pub root: *mut Root,
   pub is_text: bool,
   pub x: f64,
   pub y: f64,
@@ -46,8 +46,8 @@ impl Node {
       ya: 0.0,
       xb: 0.0,
       yb: 0.0,
-      lv: refresh_level::NONE,
-      refresh_level: 0,
+      lv: 0,
+      refresh_level: refresh_level::NONE,
       current_style: [0.0; 18],
       current_unit: [0; 18],
       computed_style: [0.0; 18],
@@ -199,17 +199,35 @@ impl Node {
     self.refresh_level
   }
 
-  pub fn on_frame(&mut self, mut diff: f64) -> usize {
+  pub fn before(&mut self, mut diff: f64) -> usize {
+    let mut count = 0;
+    let len = self.animations.len();
+    let mut res = 0;
+    self.refresh_level = refresh_level::NONE;
+    while count < len {
+      let ani = unsafe { &mut *self.animations[count] };
+      if ani.play_state == RUNNING {
+        // 需要刷新的动画返回计数+1
+        if ani.before(diff) {
+          res += 1;
+          self.cal_trans(ani);
+        }
+      }
+      count += 1;
+    }
+    res
+  }
+
+  pub fn after(&mut self) -> usize {
     let mut count = 0;
     let len = self.animations.len();
     let mut res = 0;
     while count < len {
       let ani = unsafe { &mut *self.animations[count] };
       if ani.play_state == RUNNING {
-        let r = ani.on_frame(diff);
-        if r {
+        // 动画finish返回true计数
+        if ani.after() {
           res += 1;
-          self.cal_trans(ani);
         }
       }
       count += 1;
@@ -440,7 +458,7 @@ impl Node {
     }
   }
 
-  fn cal_size(&self, v: f64, u: usize, parent: f64) -> f64 {
+  pub fn cal_size(&self, v: f64, u: usize, parent: f64) -> f64 {
     if u == style_unit::PERCENT {
       return v * parent * 0.01
     } else if u == style_unit::VW {
@@ -460,5 +478,17 @@ impl Node {
       return v * root.font_size
     }
     v
+  }
+
+  pub fn equal_style(&self, k: usize, v: f64, u: usize) -> bool {
+    if k == TRANSLATE_X || k == TRANSLATE_Z {
+      let v = self.cal_size(v, u, self.offset_width);
+      return v == self.computed_style[TRANSLATE_X]
+    } else if k == TRANSLATE_Y {
+      let v = self.cal_size(v, u, self.offset_height);
+      return v == self.computed_style[TRANSLATE_Y]
+    } else {
+      return v == self.computed_style[k]
+    }
   }
 }
