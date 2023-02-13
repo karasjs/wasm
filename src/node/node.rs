@@ -267,14 +267,13 @@ impl Node {
 
   pub fn cal_trans(&mut self, ani: &mut Animation) {
     let ts = ani.get_transition();
-    let mut lv = 0_usize;
     for item in ts.iter() {
       self.current_style[item.k] = item.v;
       self.current_unit[item.k] = item.u;
       self.set_refresh_level(item.k);
     }
     if self.refresh_level & refresh_level::TRANSFORM_ALL > 0 {
-      self.cal_matrix(lv);
+      self.cal_matrix(self.refresh_level);
     }
     if self.refresh_level & refresh_level::OPACITY > 0 {
       self.computed_style[OPACITY]
