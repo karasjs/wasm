@@ -486,4 +486,26 @@ impl Node {
     self.current_style[k] = v;
     self.current_unit[k] = u;
   }
+
+  pub fn offset_x(&mut self, v: f64) -> () {
+    self.x += v;
+    self.xa += v;
+    self.xb = self.xa + self.offset_width.ceil();
+  }
+
+  pub fn offset_y(&mut self, v: f64) -> () {
+    self.y += v;
+    self.ya += v;
+    self.yb = self.ya + self.offset_height.ceil();
+  }
+
+  pub fn resize_x(&mut self, v: f64) -> () {
+    self.offset_width += v;
+    self.xb = self.xa + self.offset_width.ceil();
+  }
+
+  pub fn resize_y(&mut self, v: f64) -> () {
+    self.offset_height += v;
+    self.yb = self.ya + self.offset_height.ceil();
+  }
 }
