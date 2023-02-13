@@ -20,16 +20,6 @@ mod wasm_ptr {
   pub fn transform<T>(addr: *const T) -> *const T {
     wasm_ptr_transform!(addr)
   }
-
-  // get object mut ref from ptr
-  // pub fn leak_mut<T>(addr: *mut T) -> &'static mut T {
-  //   wasm_ptr_transform!(addr)
-  // }
-
-  // get object ref from ptr
-  // pub fn leak<T>(addr: *const T) -> &'static T {
-  //   wasm_ptr_transform!(addr)
-  // }
 }
 
 
