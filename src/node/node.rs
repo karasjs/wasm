@@ -233,50 +233,53 @@ impl Node {
     res
   }
 
+  fn set_refresh_level(&mut self, k: usize) -> () {
+    if k == TRANSLATE_X {
+      self.refresh_level |= refresh_level::TRANSLATE_X;
+    } else if k == TRANSLATE_Y {
+      self.refresh_level |= refresh_level::TRANSLATE_Y;
+    } else if k == TRANSLATE_Z {
+      self.refresh_level |= refresh_level::TRANSLATE_Z;
+    } else if k == ROTATE_X {
+      self.refresh_level |= refresh_level::TRANSFORM;
+    } else if k == ROTATE_Y {
+      self.refresh_level |= refresh_level::TRANSFORM;
+    } else if k == ROTATE_Z {
+      self.refresh_level |= refresh_level::ROTATE_Z;
+    } else if k == SCALE_X {
+      self.refresh_level |= refresh_level::SCALE_X;
+    } else if k == SCALE_Y {
+      self.refresh_level |= refresh_level::SCALE_Y;
+    } else if k == SCALE_Z {
+      self.refresh_level |= refresh_level::SCALE_Z;
+    } else if k == SKEW_X {
+      self.refresh_level |= refresh_level::TRANSFORM;
+    } else if k == SKEW_Y {
+      self.refresh_level |= refresh_level::TRANSFORM;
+    } else if k == OPACITY {
+      self.refresh_level |= refresh_level::OPACITY;
+    } else if k == TFO_X {
+      self.refresh_level |= refresh_level::TRANSFORM;
+    } else if k == TFO_Y {
+      self.refresh_level |= refresh_level::TRANSFORM;
+    }
+  }
+
   pub fn cal_trans(&mut self, ani: &mut Animation) {
     let ts = ani.get_transition();
     let mut lv = 0_usize;
     for item in ts.iter() {
       self.current_style[item.k] = item.v;
       self.current_unit[item.k] = item.u;
-      if item.k == TRANSLATE_X {
-        lv |= refresh_level::TRANSLATE_X;
-      } else if item.k == TRANSLATE_Y {
-        lv |= refresh_level::TRANSLATE_Y;
-      } else if item.k == TRANSLATE_Z {
-        lv |= refresh_level::TRANSLATE_Z;
-      } else if item.k == ROTATE_X {
-        lv |= refresh_level::TRANSFORM;
-      } else if item.k == ROTATE_Y {
-        lv |= refresh_level::TRANSFORM;
-      } else if item.k == ROTATE_Z {
-        lv |= refresh_level::ROTATE_Z;
-      } else if item.k == SCALE_X {
-        lv |= refresh_level::SCALE_X;
-      } else if item.k == SCALE_Y {
-        lv |= refresh_level::SCALE_Y;
-      } else if item.k == SCALE_Z {
-        lv |= refresh_level::SCALE_Z;
-      } else if item.k == SKEW_X {
-        lv |= refresh_level::TRANSFORM;
-      } else if item.k == SKEW_Y {
-        lv |= refresh_level::TRANSFORM;
-      } else if item.k == OPACITY {
-        lv |= refresh_level::OPACITY;
-      } else if item.k == TFO_X {
-        lv |= refresh_level::TRANSFORM;
-      } else if item.k == TFO_Y {
-        lv |= refresh_level::TRANSFORM;
-      }
+      self.set_refresh_level(item.k);
     }
-    if lv & refresh_level::TRANSFORM_ALL > 0 {
+    if self.refresh_level & refresh_level::TRANSFORM_ALL > 0 {
       self.cal_matrix(lv);
     }
-    if lv & refresh_level::OPACITY > 0 {
+    if self.refresh_level & refresh_level::OPACITY > 0 {
       self.computed_style[OPACITY]
         = self.current_style[OPACITY];
     }
-    self.refresh_level |= lv;
   }
 
   pub fn cal_matrix(&mut self, rl: usize) -> () {
@@ -480,6 +483,16 @@ impl Node {
 
   pub fn equal_style(&self, k: usize, v: f64, u: usize) -> bool {
     self.current_style[k] == v && self.current_unit[k] == u
+  }
+
+  pub fn equal_set_style(&mut self, k: usize, v: f64, u: usize) -> bool {
+    let res = self.current_style[k] == v && self.current_unit[k] == u;
+    if !res {
+      self.current_style[k] = v;
+      self.current_unit[k] = u;
+      self.set_refresh_level(k);
+    }
+    res
   }
 
   pub fn update_style(&mut self, k: usize, v: f64, u: usize) -> () {
