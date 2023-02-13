@@ -64,6 +64,22 @@ impl Frame {
   }
 }
 
+struct Style {
+  k: usize,
+  v: f64,
+  u: usize,
+}
+
+impl Style {
+  fn new(k: usize, v: f64, u: usize) -> Style {
+    Style {
+      k,
+      v,
+      u,
+    }
+  }
+}
+
 pub(crate) struct Transition {
   pub k: usize,
   pub v: f64,
@@ -104,6 +120,7 @@ pub struct Animation {
   pub index: isize,
   pub percent: f64,
   transition: Vec<Transition>,
+  origin: Vec<Style>,
 }
 
 #[wasm_bindgen]
@@ -145,6 +162,7 @@ impl Animation {
       index: -1,
       percent: -1.0,
       transition: Vec::new(),
+      origin: Vec::new(),
     }
   }
 
@@ -202,6 +220,10 @@ impl Animation {
     }
   }
 
+  pub fn add_origin(&mut self, k: usize, v: f64, u: usize) -> () {
+    self.origin.push(Style::new(k, v, u));
+  }
+
   pub fn play(&mut self) {
     self.current_time = 0_f64;
     self.play_count = 0;
@@ -255,6 +277,7 @@ impl Animation {
       let total = current_frames[index + 1].time - time;
       percent = (current_time - time) / total;
     }
+    self.transition.clear();
     // 最后结束特殊处理
     if is_last_frame {
       if self.fill == FORWARDS || self.fill == BOTH {
@@ -269,9 +292,23 @@ impl Animation {
         if current_time >= dur + self.end_delay {
           self.play_count += 1;
           self.finished = true;
-          // TODO originStyle
         }
-      } else {}
+      } else {
+        // 恢复originStyle
+        self.end = true;
+        self.play_count += 1;
+        self.finished = true;
+        let node = unsafe { & *self.node };
+        for item in self.origin.iter() {
+          if !node.equal_style(item.k, item.v, item.u) {
+            self.transition.push(Transition {
+              k: item.k,
+              v: item.v,
+              u: item.u,
+            });
+          }
+        }
+      }
     } else {
       // 对比前后两帧是否为同一关键帧，不是则清除之前关键帧上的percent标识为-1，这样可以识别跳帧和本轮第一次进入此帧
       // 这里和js不同，由于不需要回调，前置写在这里判断是否需要计算transition
@@ -450,7 +487,7 @@ fn cal_intermediate_style(current_frame: &Frame, mut percent: f64) -> Vec<Transi
 fn cal_last_style(node: &Node, current_frame: &Frame) -> Vec<Transition> {
   let mut ts: Vec<Transition> = Vec::new();
   for item in current_frame.list.iter() {
-    if node.equal_style(item.k, item.v, item.u) {
+    if !node.equal_style(item.k, item.v, item.u) {
       ts.push(Transition {
         k: item.k,
         v: item.v,
