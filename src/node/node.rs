@@ -141,6 +141,19 @@ impl Node {
     self.cal_matrix(refresh_level::REFLOW);
   }
 
+  pub fn set_xywh(&mut self, x: f64, y: f64, offset_width: f64, offset_height: f64) -> () {
+    self.x = x;
+    self.y = y;
+    self.offset_width = offset_width;
+    self.offset_height = offset_height;
+    self.xa = x;
+    self.ya = y;
+    // cache存的尺寸都是ceil整数，为了在Page中满足尺寸，以及边缘透明需求
+    self.xb = x + offset_width.ceil();
+    self.yb = y + offset_height.ceil();
+    self.cal_matrix(refresh_level::REFLOW);
+  }
+
   // 文本style复用parent，所以只需要设置尺寸位置
   pub fn set_txt(&mut self, x: f64, y: f64, offset_width: f64, offset_height: f64) -> () {
     self.x = x;

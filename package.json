@@ -1,6 +1,6 @@
 {
   "name": "wasm-karas",
-  "version": "0.86.0",
+  "version": "0.86.1",
   "dependencies": {},
   "scripts": {
     "build": "wasm-pack build --target web"
